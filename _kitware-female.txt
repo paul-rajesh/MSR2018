@@ -1,0 +1,3364 @@
+===Database gerrit_kitware
+
+== Dumping data for table JOINED_TABLE
+
+|the last argument &quot;${ITK_TEST_OUTPUT_DIR}/itkTransformToDisplacementFieldFilterTestField01.mha&quot; seems to be redundant (not used)?
+
+Is this the base line result?
+|the last argument &quot;${ITK_TEST_OUTPUT_DIR}/itkTransformToDisplacementFi
+eldFilterTestImage02.mha)&quot; seems to be redundant (not used)?
+Is this the base line result?
+|Remote modules are not the same.  Since the remote source code are not in the source tree in the first place, the common group logic in ITKModuleEnablement.cmake (globing the itk-module.cmake)  does not work for remote modules.  Please feel free to give it a try but this is the simplest fix I came up.
+|Maybe adding:
+The speed improvement is mainly gained by avoiding smartpointer de-reference in a loop.
+|legth=&gt;length
+|Done
+|Done
+|Done
+|Done
+|When &quot;Examples&quot;= ON, ITK_BUILD_DEFAULT_MODULES is ON already.
+I am moving the list of IO modules to a separate cmake file so that it is the only place to be edited to manage new (or remove) IO modules.
+|the comment and the following line needs update as well
+|Does it make sense to test a registration with  the fixed image being  float and  the moving image being double ? In which case, the internal Virtual Image would be set to float (the same as the fixed image)? Would this cause trouble?
+|bsd=&gt;Apache
+|-DVTK_Group_Web: BOOL=ON
+-DVTK_WRAP_JAVA: BOOL=ON
+|should this be moved up to the if(neighbors) {} section?
+|Dendrogram1 does not need to SetOrientation?  is it  always default to left-to-right?
+I remember you showed a case where tree 1 is top-&gt;down oriented.
+|is 8 a magic number? should it be a variable/parameter?
+|again, is 4 another magic number? better document those golden thresholds
+|cool implementation! some comments about the queue would be appreciated!
+|probably should bump this value to 2500 , since all three baseline images reports &gt;2000 number of different pixels already
+|The easiest is to add  a baseline image.
+ I will email Steve again.
+|Is this really deprecated?
+|Can we make it more generic? Otherwise later if we add a new vtk dependent module, we need to come here and append the list.
+
+How about a new CMake variable like: ITK_USE_VTK?
+and define it inside the modules which requires VTK?
+
+Make sense?
+|redundant?
+the  mappings are not used in computing the differences
+|I see.
+Thanks for the details!
+|I see. I was wrong about the DicomSeries test example. It indeed takes in each image as one argument.
+
+Why/when it is useful to fetch a group of images, when only one image ( the one specified ) is used for testing?
+|The place I think this syntax could be used is here:
+See line 257-266 of  Module/IO/ImageBase/test/CMakeLists.txt:
+
+The image series are:
+Testing/Data/Input/DicomSeries/Image0075.dcm
+Testing/Data/Input/DicomSeries/Image0076.dcm
+Testing/Data/Input/DicomSeries/Image0077.dcm
+|what is the purpose of using the image series syntax (,:) here? Just to show this syntax could be used even if there is only a single image?
+
+Shouldn't we only use the series syntax when we are actually need a series of images?
+
+I think this might cause confusion.
+
+We could put in the syntax for  &quot;itkImageSeriesReaderDimensionsTest1&quot;  in Module/IO/ImageBase/test/CMakeLists.txt.
+|This line is causing trouble...
+can't close the vidl_ffmepg_ostream...
+|+#include  &lt;algorithm&gt;
+|#include &lt;algorithm&gt;
+|Compiling error here:
+something wrong here?
+might got confused with vector image and RBG image?
+|This is buggy... need padding too?
+|This was from the other test. Should be updated.
+|remove
+|why &quot;-2&quot;?
+the base line has 8 6 24
+the output would be 8 6 12 (8+6-2)
+Is this on purpose?
+|use signed value (OffsetValueType) for scannableDuration, is that on purpose?
+when the value it get is &quot;-1&quot;, the following line  301 will get the unsigned long value, which then would be the maximum unsigned 32/64 bit depending on the machine.
+|this change is checked in by accident?
+|Can we add a version number here?
+|this line should be removed
+|Done
+|Done
+|not available
+
+followed the example in itkObjectTobjectMetricTest.cxx
+|Done
+|modified by accident? should not be included in this patch
+|Remove &quot;ITKVideoCore&quot;.
+
+Test module's dependence module list includes the source module's dependency list
+by default (implemented in ITKMOduleMacros.cmake). TEST_DEPENDS only needs to specify extra modules that are needed  by the test module.
+|Why this license header is different?
+shouldn't it be  itkVideoIOFactory.cxx?
+|Document ITKVideoCore, not the entire video group module:
+|shouldn't it be:
+target_link_libraries(ITKVideoCore ${ITKCommon_LIBRARIES})
+?
+|Missing:
+set(Compatibility_documentation &quot;......&quot;)
+|Will you add a comment about  which test causes this extra test dependency on ITK-ImageIntensity?
+Thanks.
+|will do , in a separate commit;
+thanks.
+|ITK-Mesh module is created out of the old Common dir.
+It's no longer part  of the ITK-Common, but some of the tests in  ITK-Common still depends on ITK-Mesh
+|is this change relevant to this commit?
+|itkFilterImageAddTest.cxx
+
+doesn't have a corresponding add_test in ITK3.20
+|Good catch.
+I was in the middle of moving this test, haven't add it to the modules yet.
+|Bad idea to depend on ITK-Review module, which depends on everything else right now.
+Better move the LabelContourImageFIlter class out of ITK-Review into another module, and use that module in the dependency list instead.
+
+We (modularization team) discussed that it might be the best to move ITK-Review our of the module list (maybe move it to a separate repo, or make it similar to the &quot;Examples&quot; directory), forcing people to refactoring the entire review directory. We need a discussion on this in the next T-Con.
+|the header files should be removed.
+
+
+When both .txx and .h exist, only include the .txx file in the header test.
+|I don't think you need to do that, since the test module won't be in your ${ITK_MODULE_ALL} list if there is no test directory in the module. (see my email)
+
+can you tell me how &quot;DOXGEN_TEST_DIRS&quot; is used?
+right now in your code, DOXGEN_TEST_DIRS are almost identical to  DOYGEN_INCLUDE_DIRS , since most modules have tests.
+|For each module(eg.g myModule) that contains tests, we generate two modules: myModule and myModule-test.
+The purpose of having  a separated quesdo module :myModule-test  is to separate the module dependencies of the src and the test. 
+
+Therefore the ${ITK_MODULES_ALL} list contains both the modules, and their test modules.  
+If one module doesn't have a testing directory, there should not be a corresponding test module in the ${ITK_MODULES_ALL} list.
+
+I  will double check after the t-con and send you another email.
+|you could try :
+
+ list( APPEND DOXYGEN_TEST_DIRS &quot;\&quot;${${itk-module}_SOURCE_DIR}/../include\&quot; \\ \n &quot;)
+
+to avoid getting test/include, which doesn't exist.
+|Kind=&gt;King
+|was created for monolithic ITK.
+|why this is keep showing up as difference?
+If you download the new version, it's the same...
+|missing NAME after add_test
+|why move ShapeNeighborhoodIteratorTest from one test driver to the other?
+|We  don't have such variable yet.
+We we could create one, maybe in ITKGroups.cmake?
+|shouldn't this be the opposite:
+set(ITK-Examples_LIBRARIES, ${ITK_LIBRARIES})?
+
+(then have to define ITK_LIBRARIES somewhere else)
+|There are template files in Testing code, for example 
+itkNullImageToImageFilterDriver.txx.
+This file needs to be in the include directory to be used by tests in other modules.
+|this is no longer available in monolithic ITK
+|it's repeated ( the line before)
+|You're right! My mistake.
+I am still testing this patch on my local machine. 
+Will submit a final version after fully verified.
+|good catch
+|will add this one back
+|and this one
+|This file  is a slightly modified version of itkTestDriverInclude.h:
+added headers  of PNG and Meta and registered two IO factories.
+|repeated 2344
+|all repeated
+|kept in itk-common
+|Patch Set 1: Looks good to me, approved
+
+
+|Patch Set 6: (2 inline comments)
+
+
+|Patch Set 1:
+
+Did you try turning ITK_BUILD_DEFAULT_MODULES OFF first?
+
+The group options are exposed only when 
+ITK_BUILD_DEFAULT_MODULES=OFF.
+
+Maybe starting a fresh build would help as well.
+|Patch Set 1: (1 inline comment)
+
+I won't have time to address this  patch till early next week.
+|Patch Set 1: Looks good to me, but someone else must approve
+
+Nice!
+|Patch Set 4: (2 inline comments)
+
+awesome improvement!
+|Uploaded patch set 2.
+|Patch Set 1: (4 inline comments)
+
+Excellent suggestions!
+Thank you very much for the proof read!
+Changes are made accordingly!
+|Uploaded patch set 2.
+|Patch Set 1:
+
+Brad and Matt, 
+Not sure how to verify the remote module IOs in cmake for testing.
+So here is just a brief test (followed the IOPlugin example ) on all the default IO modules (when Examples are ON, at least all the default IOs are ON).
+Thanks.
+-Xiaoxiao
+|Patch Set 2:
+
+Brad, 
+Yes, i was trying to do some inspections on the Module enablement status in CMake. Didn't come up with a solution yet.  I am counting on Matt to enlighten me!
+
+And by adding the test in the examples, we are sure that all the default IO modules are ON.
+|Patch Set 2:
+
+${module}_enabled should work.
+I will send another patch soon.
+Thanks!
+|Uploaded patch set 3.
+|Patch Set 3: (1 inline comment)
+
+Hi JC and Matt, 
+Thanks for the suggestions.
+JC, the tricky thing is the current registration cmake code needs to &quot;know&quot; both the exact module name and the class name (which are often a little different) of each image IO.
+
+Please see my comment.
+
+I am updating the commit for the SCIFIO registration bug.
+And I will be sending another commit to do the testing.
+|Uploaded patch set 4.
+|Patch Set 4: Verified
+
+Moved the image format string manipulation to UseITK.cmake.
+|Patch Set 1: Looks good to me, approved
+
+Thanks?
+|Change has been successfully merged into the git repository.
+|Patch Set 1: Looks good to me, approved
+
+
+|Change has been successfully merged into the git repository.
+|Patch Set 1: Looks good to me, approved
+
+nice!
+|Change has been successfully merged into the git repository.
+|Patch Set 1:
+
+hmm , i guess I misunderstood the test.
+thanks zack!
+|Patch Set 1: Abandoned
+
+zack had a better patch merged.
+|Patch Set 1: Abandoned
+
+yes,sorry
+|Patch Set 1:
+
+Not really sure why it only fails in this machine.
+But updating the code with the proper typedefs fixed the problem.
+I will add the link of the windows experimental build later.(it will take a while)
+|Patch Set 1: Verified
+
+Experimental build on the same windows machine of this test is passing now:
+http://open.cdash.org/testDetails.php?test=223020657&amp;build=3132049
+|Patch Set 1:
+
+Brad, I was using their insight journal code directly.
+I will correct those types you pointed and test it again.
+This mesh reader seems to be useful to be moved to the module itself instead of in the test only.
+Thanks.
+|Uploaded patch set 2.
+|Patch Set 2:
+
+I think the patch will fix the error.
+Please wait for my verification on my windows machine.
+|Patch Set 2: Verified
+
+Verified:
+&quot;
+The following tests passed:
+        itkPhysicsBasedNonRigidRegistrationMethodTest
+
+100% tests passed, 0 tests failed out of 1
+
+Label Time Summary:
+ITKFEMRegistration    =  21.23 sec
+
+Total Test time (real) =  50.10 sec
+&quot;
+|Patch Set 2: Looks good to me, approved
+
+
+|Uploaded patch set 2.
+|Patch Set 2:
+
+Still working on a test for this.
+|Patch Set 1: Looks good to me, approved
+
+
+|Patch Set 2: Verified
+
+good catch!
+would be great to add a test with uint8 pixel type image.
+|Patch Set 3: Looks good to me, approved
+
+
+|Patch Set 1: (1 inline comment)
+
+I can see the ITKv4  source in the build tree got fetched from the origin master, but not pulled for some reason.
+|Patch Set 1:
+
+request build
+|Uploaded patch set 2.
+|Patch Set 3: Looks good to me, approved
+
+
+|Patch Set 1: Looks good to me, approved
+
+
+|Patch Set 1: Looks good to me, approved
+
+
+|Patch Set 1:
+
+request build
+|Patch Set 1: Looks good to me, approved
+
+
+|Patch Set 1: Looks good to me, approved
+
+
+|Change has been successfully merged into the git repository.
+|Patch Set 1: Looks good to me, approved
+
+
+|Patch Set 1: Looks good to me, but someone else must approve
+
+are they mapping to the same physical machine?
+|Patch Set 1: Looks good to me, approved
+
+
+|Patch Set 3: Looks good to me, approved
+
+
+|Uploaded patch set 2.
+|Patch Set 2: Looks good to me, approved
+
+
+|Uploaded patch set 2.
+|Uploaded patch set 3.
+|Patch Set 3: Looks good to me, approved
+
+
+|Patch Set 1:
+
+Hans, 
+This patch updated some outdated cmake configuration material for the basic default installation of ITK.
+
+I have talked with Matt on this. I plan to add more advance module configuration instructions in a later chapter about the software architecture and system designs.
+
+Let me know what do you think.
+Thanks.
+|Patch Set 1: Looks good to me, approved
+
+
+|Patch Set 2: Looks good to me, approved
+
+
+|Patch Set 1: (1 inline comment)
+
+Good commit msg!
+Had one comment about an extra test:
+|Patch Set 1: Looks good to me, approved
+
+
+|Patch Set 1: Looks good to me, approved
+
+
+|Patch Set 1: (1 inline comment)
+
+
+|Patch Set 1: Looks good to me, approved
+
+
+|Patch Set 1: Looks good to me, approved
+
+
+|Patch Set 1:
+
+good catch!
+|Patch Set 2: Looks good to me, approved
+
+
+|Patch Set 2:
+
+the dash3 windows machine needs to be kicked again...
+|Patch Set 1: Looks good to me, approved
+
+
+|Patch Set 1: Looks good to me, approved
+
+
+|Change has been successfully merged into the git repository.
+|Patch Set 1:
+
+Zack, 
+Just trying to make the edge weights more robust in all cases:
+
+What would happen if the weights specified in the newick string is negative? 
+
+It might be possible that the zero weights given in the newick string is meaningful in certain measurements? Forcing all the weights to be 1.0  (if there are a couple of 0.0s) may not be the best solution.
+
+Does it make sense?
+Thanks.
+|Patch Set 1: (1 inline comment)
+
+
+|Patch Set 1: Looks good to me, approved
+
+
+|Uploaded patch set 2.
+|Patch Set 1: Looks good to me, approved
+
+you are quick!
+I just sent another patch...
+
+you won! :)
+|Change has been successfully merged into the git repository.
+|Uploaded patch set 2.
+|Patch Set 2:
+
+Oops... not enough coffee this morning...
+
+Good eye!
+Fixed.
+Thank you!
+|Patch Set 2: Abandoned
+
+Merged in another patch already:
+http://review.source.kitware.com/#/c/12912/
+
+Thank you David!
+|Uploaded patch set 2.
+|Patch Set 2:
+
+Jeff, 
+
+Thanks for the pointers,
+I redefine the SetInputString() for the newicktree, because the way we handle the string in the newick tree is a little different. 
+The function vtkDataReader::SetInputString() attaches a null character to the end, which would cause trouble if we pass it into directly into the Newick tree reader function.
+
+But yes, I could work around it easily and I should inherit the functions from vtkDataReader. 
+
+Why vtkDataReader is in the Legacy folder? I wasn't sure whether I could modify the function to be virtual just because it is &quot;legacy&quot; code (which means &quot;do not touch&quot; to me)
+
+Thanks.
+|Patch Set 2:
+
+Chris, 
+Yes, I am fixing the mess now...
+ignore my previous patches, made by a confused version of me...
+|Uploaded patch set 3.
+|Change has been successfully merged into the git repository.
+|Patch Set 2: Looks good to me, but someone else must approve
+
+
+|Patch Set 2: Looks good to me, approved
+
+
+|Patch Set 1: Looks good to me, approved
+
+
+|Patch Set 1: Looks good to me, approved
+
+
+|Patch Set 1: Looks good to me, approved
+
+
+|Patch Set 3: Looks good to me, approved
+
+
+|Patch Set 3: Looks good to me, approved
+
+
+|Patch Set 1: Looks good to me, approved
+
+
+|Patch Set 1: I would prefer that you didn't submit this
+
+This commit attempts to allow users interacting with the CMake GUI to deselect/turn-off a module after a default CMake configuration, namely, the build-all-but-one case.
+
+However, this takes multiple configurations, with the CMake variables internally modified during the configuration, which is quite non-CMake intuitive and does not work with the command line mode.
+
+The build-all-but one case is not a typical use case, and it
+mostly will still end up with multiple steps to track through each layer of the module dependencies to toggle modules OFF. 
+
+Therefore, instead, I am putting together a user manual document to explain the existing module selection process and options to clear the mud, please feel free to contribute:
+
+https://docs.google.com/a/kitware.com/document/d/154M9DjqYFCi0TDiAtMviim4JN4d4xkzh5uD4Oext9ZY/edit#
+|Patch Set 1: Abandoned
+|Patch Set 1: Looks good to me, approved
+
+
+|Patch Set 1: Looks good to me, approved
+
+
+|Patch Set 1: Looks good to me, approved
+
+
+|Patch Set 2: Looks good to me, approved
+
+
+|Patch Set 1: (1 inline comment)
+
+
+|Patch Set 2: Looks good to me, approved
+
+
+|Patch Set 1: Looks good to me, approved
+
+
+|Patch Set 2: Looks good to me, approved
+
+
+|Patch Set 1: Abandoned
+
+the dependency of this topic branch is messed up for some reason?
+|Patch Set 1: Looks good to me, approved
+
+
+|Patch Set 1: Looks good to me, approved
+
+
+|Uploaded patch set 2.
+|Patch Set 2:
+
+not ready
+|Uploaded patch set 3.
+|Uploaded patch set 4.
+|Uploaded patch set 5.
+|Patch Set 5: Abandoned
+
+rebased conflict, will resubmit
+|Uploaded patch set 2.
+|Uploaded patch set 3.
+|Patch Set 2: Looks good to me, approved
+
+
+|Uploaded patch set 3.
+|Patch Set 2: (4 inline comments)
+
+
+|Patch Set 2: Looks good to me, but someone else must approve
+
+nice refactoring!
+|Patch Set 1: Looks good to me, approved
+
+
+|Patch Set 1: Looks good to me, approved
+
+
+|Patch Set 1: Verified; Looks good to me, approved
+
+
+|Patch Set 1:
+
+Yes, Brad. 
+This patch needs to wait until each remote module makes the corresponding change in their names.
+|Patch Set 1:
+
+SCIFIO module related changes are merged! Thanks to the quick response from Mark.
+
+I have sent out the code changes to MGHIO and SmoothingRecursiveYvvGaussianFilter authors.
+ 
+
+Once the changes are made on the remote modules themselves, 
+I will modify this patch with the corresponding git tags.
+|Patch Set 2:
+
+Now we are waiting for one more remote module code change to be merged (The gaussian filter)  and I will update this patch with some backward compatibility cmake warnings.
+|Uploaded patch set 3.
+|Patch Set 3: Verified; Looks good to me, approved
+
+
+|Patch Set 2: Looks good to me, approved
+
+
+|Uploaded patch set 2.
+|Uploaded patch set 3.
+|Patch Set 3:
+
+Rebased on master, and fixed a couple of typos.
+Migration guide will be added if this change is approved.
+
+Also, &quot;EXCLUDE_FROM_ALL&quot; needs to changed to &quot;EXCLUDE_FROM_DEFAULT&quot; to be consistent, which could in a separate commit in the same topic branch.
+|Patch Set 3: Abandoned
+|Uploaded patch set 2.
+|Uploaded patch set 3.
+|Patch Set 1:
+
+To do: add a migration guide file.
+|Uploaded patch set 2.
+|Uploaded patch set 3.
+|Patch Set 3:
+
+Sure.
+Thanks matt.
+|Patch Set 1: Looks good to me, approved
+
+
+|Patch Set 1: Looks good to me, approved
+
+Great! Thank you!
+|Patch Set 1: Looks good to me, approved
+
+
+|Patch Set 1: Verified; Looks good to me, approved
+
+
+|Patch Set 1: Verified; Looks good to me, approved
+
+
+|Patch Set 3: Looks good to me, but someone else must approve
+
+
+|Patch Set 1: Looks good to me, approved
+
+
+|Patch Set 1: Looks good to me, approved
+
+
+|Patch Set 1: Looks good to me, approved
+
+
+|Change has been successfully merged into the git repository.
+|Patch Set 1: Looks good to me, but someone else must approve
+
+
+|Patch Set 2: Looks good to me, approved
+
+Nice fix!
+|Patch Set 4:
+
+This is great!
+I think we should incorporate the OpenCV superbuild into ITK.
+|Patch Set 1: (1 inline comment)
+
+
+|Patch Set 1:
+
+waiting for steve's verification
+|Patch Set 1: (1 inline comment)
+
+
+|Patch Set 1: Abandoned
+|Uploaded patch set 2.
+|Uploaded patch set 3.
+|Uploaded patch set 4.
+|Patch Set 4:
+
+will add migration guide and fixed the typo next.
+|Uploaded patch set 5.
+|Uploaded patch set 2.
+|Patch Set 2:
+
+comments incorporated.
+thanks Matt!
+|Uploaded patch set 2.
+|Uploaded patch set 3.
+|Patch Set 1:
+
+This patch set still requires a second configuration to enable the module. &quot;CMake -E touch&quot; does not trigger a reconfiguration. 
+
+Probably needs to re-globing the itk-module.cmake files, after the remote module source code is downloaded into the source tree, to get the module DAG right.
+|Uploaded patch set 2.
+|Patch Set 2:
+
+The second patch set only contains changes on the commit msg.
+|Uploaded patch set 3.
+|Patch Set 3:
+
+Thanks Bill.
+I will make a separate patch for LSTK to have the EXCLUDE_FROM_ALL tag.
+This patch set 3 should accomplish the goal of a single CMake configuration for both downloading and creating the
+module targets.
+|Uploaded patch set 4.
+|Patch Set 4:
+
+To maintain backward compatible, set the Module_{module} to be ON if the Fetch_{module} is ON. Also added a warning about the deprecation of Fetch_{module name},
+|Uploaded patch set 5.
+|Uploaded patch set 6.
+|Patch Set 1: Looks good to me, but someone else must approve
+
+
+|Patch Set 2: Verified; Looks good to me, approved
+
+
+|Patch Set 1: Verified; Looks good to me, but someone else must approve
+
+
+|Uploaded patch set 2.
+|Patch Set 2: Verified; Looks good to me, but someone else must approve
+
+
+|Uploaded patch set 2.
+|Uploaded patch set 3.
+|Patch Set 3: Verified; Looks good to me, but someone else must approve
+
+Thanks, Matt!
+|Uploaded patch set 4.
+|Patch Set 4: Looks good to me, but someone else must approve
+
+Oops!
+You would think this simple patch won't need three patch sets :-)
+thanks!
+|Patch Set 1:
+
+I wasn't able to reproduce the test failure manually on dashmacmini5.kitware machine.
+
+I adjust the tolerance according to reported ImageError of the existing baselines.
+|Patch Set 1:
+
+The error disappeared on today's dashboard ( the same dashboard machine ):
+http://open.cdash.org/viewTest.php?onlyfailed&amp;buildid=2975490
+|Patch Set 1: Abandoned
+|Patch Set 1: Looks good to me, approved
+
+
+|Patch Set 1: (1 inline comment)
+
+
+|Patch Set 1: Abandoned
+
+The change in this patch is wrong, but didn't trigger testing failures.
+
+The change is based on the wrong assumption that  VectorImage::GetPixel() method returns a reference to a PixelType variable just as Image::GetPixel() method. 
+
+A new test is added in the following gerrit item to directly test the SetPixel method of the VectorImagetoImageAdaptor class:
+http://review.source.kitware.com/#/c/11972/
+|Patch Set 1:
+
+Sorry,the new test is in :
+http://review.source.kitware.com/#/c/11973/
+|Patch Set 1: Abandoned
+
+repeated submission
+|Patch Set 1:
+
+Pew-thian, 
+I think you could could add a test function in  itkAdaptImageFilterTest*.cxx or create a unit test for 
+itkNthElementPixelAccessor.
+
+Thank you! It's great to see you on gerrit!
+|Uploaded patch set 2.
+|Patch Set 2: Fails
+
+itkNthElementPixelAccessorTest2.cxx is not working.
+
+itkImageAdaptor does not seem to support images with the pixel type &quot;itkVaraibelLenghVector&quot;.
+
+Pew-Thian, Will you rework the itkNthElementPixelAccessorTest2 to test the code you modified?
+
+Thanks.
+|Patch Set 3:
+
+Hey Pew-Thian, 
+Patch set 3 is no different than patch set 2.
+Will you double check?
+Thanks.
+
+-Xiaoxiao
+|Patch Set 4: Verified; Looks good to me, but someone else must approve
+
+Tested.
+Looking good!
+Thanks!
+|Uploaded patch set 5.
+|Patch Set 5: Verified; Looks good to me, but someone else must approve
+
+Added a few lines to test the added operators.
+|Patch Set 5: No score
+
+Brad, will you mark the parts where you think need to be improved?
+It does verify the pixel value through the adaptor which uses the accessor.
+Thanks.
+|Uploaded patch set 6.
+|Patch Set 6:
+
+This patch set fixes the two dahsboard test failures.
+The assignment operator forgets to change the vector length of each pixel.
+|Patch Set 11:
+
+request build: all
+|Patch Set 1: Abandoned
+|Patch Set 1: Abandoned
+
+Replaced by:
+
+http://review.source.kitware.com/#/c/11483/
+|Patch Set 1: Looks good to me, approved
+
+
+|Change has been successfully merged into the git repository.
+|Patch Set 1: Looks good to me, approved
+
+
+|Change has been successfully merged into the git repository.
+|Change has been successfully merged into the git repository.
+|Patch Set 1: Looks good to me, approved
+
+typo in the commit msg:
+wheer==&gt;where
+
+thanks!
+|Patch Set 2: Looks good to me, approved
+
+
+|Patch Set 1: Looks good to me, approved
+
+Wow, cool!
+Surprised by the efficiency of DFS iterator.
+|Patch Set 2: Looks good to me, approved
+
+
+|Patch Set 1: Looks good to me, approved
+
+
+|Patch Set 2: (1 inline comment)
+
+
+|Patch Set 1: Looks good to me, approved
+
+
+|Patch Set 1: Looks good to me, approved
+
+
+|Patch Set 1: (1 inline comment)
+
+
+|Patch Set 1: Abandoned
+|Patch Set 1: Looks good to me, approved
+
+
+|Change has been successfully merged into the git repository.
+|Patch Set 1: Abandoned
+
+patch set 2 is on 
+http://review.source.kitware.com/#/c/10464/
+|Uploaded patch set 2.
+|Uploaded patch set 3.
+|Patch Set 3: Looks good to me, approved
+
+
+|Change has been successfully merged into the git repository.
+|Uploaded patch set 2.
+|Uploaded patch set 3.
+|Uploaded patch set 4.
+|Patch Set 4:
+
+In patch set4, I updated the filter name (using Remove instead of Drop) according to Bill's comment. 
+Also the vertex data and the edge data are now copied to the output tree. Test is updated accordingly.
+|Uploaded patch set 5.
+|Uploaded patch set 6.
+|Change has been successfully merged into the git repository.
+|Patch Set 5:
+
+It is definitely related to the test modules.
+I haven't figured out yet.
+Brad King might have a quick clue into this.
+|Patch Set 1: Looks good to me, but someone else must approve
+
+
+|Patch Set 1:
+
+Thank you, Bill!
+Good Catch!
+|Patch Set 1:
+
+This is great!
+Thank you Arnaud!
+|Patch Set 1: (1 inline comment)
+
+
+|Patch Set 1: (1 inline comment)
+
+
+|Patch Set 1: (1 inline comment)
+
+
+|Patch Set 1: Verified
+
+(1 inline comment)
+
+
+|Patch Set 1: Looks good to me, but someone else must approve
+
+
+|Patch Set 1: Looks good to me, approved
+
+
+|Patch Set 1:
+
+Arnard, 
+I am trying to fix my dashboard errors: http://open.cdash.org/viewTest.php?onlyfailed&amp;buildid=2329986
+ 
+
+Are you familiar with  vidl_ffmpeg_ostream ?
+
+The logic of the tests look good to me and those tests used to be passing...
+I don't feel i really need to debug through the vidl lib in VXL ( and i hope not).
+will you  please check  whether those tests fail on your machine? 
+
+Thanks a lot!
+|Uploaded patch set 2.
+|Patch Set 2:
+
+Patrick and Arnaud, 
+
+I need some help on those failing tests. Will you take a look?
+
+vidl_itk_istreamTest and VXLVideoIOTest  are still failing.
+
+vidl_itk_istreamTest passes with the  &quot;inde-circulation.avi&quot; input video, but not with the &quot;inde-circulation_short.avi&quot;.
+
+Might be something to do with the codec in different versions of ffmpeg?
+
+
+Both failing tests are somehow related to the vxl calss &quot;vidl_ffmpeg_ostream&quot; after writing the frames. When deleting the ostream after writing into a video file, seg faults will happen. 
+
+I used valgind on the VXLVideoIOTest, showing the memory leaks when closing the ostream, but I have no clue what might cause it inside the itk code, and not brave enough to debug into vidl classes:
+
+Here is the valgrind output:
+==24685== Mismatched free() / delete / delete []
+==24685==    at 0x4C27FF2: operator delete(void*) (vg_replace_malloc.c:387)
+==24685==    by 0x6AB163: vidl_ffmpeg_ostream::close() (in /home/xiaoxiao/work/Dashboard/bin/ITK_Video-Release/bin/ITKVideoBridgeVXLTestDriver)
+==24685==    by 0x6AB254: vidl_ffmpeg_ostream::~vidl_ffmpeg_ostream() (in /home/xiaoxiao/work/Dashboard/bin/ITK_Video-Release/bin/ITKVideoBridgeVXLTestDriver)
+==24685==    by 0x6AB348: vidl_ffmpeg_ostream::~vidl_ffmpeg_ostream() (in /home/xiaoxiao/work/Dashboard/bin/ITK_Video-Release/bin/ITKVideoBridgeVXLTestDriver)
+==24685==    by 0x699B85: itk::VXLVideoIO::FinishReadingOrWriting() (in /home/xiaoxiao/work/Dashboard/bin/ITK_Video-Release/bin/ITKVideoBridgeVXLTestDriver)
+==24685==    by 0x5CD2FB: test_VXLVideoIO(char*, char*, char*, char*, unsigned int, unsigned int, unsigned long, double) (in /home/xiaoxiao/work/Dashboard/bin/ITK_Video-Release/bin/ITKVideoBridgeVXLTestDriver)
+==24685==    by 0x5CDE6E: itkVXLVideoIOTest(int, char**) (in /home/xiaoxiao/work/Dashboard/bin/ITK_Video-Release/bin/ITKVideoBridgeVXLTestDriver)
+==24685==    by 0x528BDE: main (in /home/xiaoxiao/work/Dashboard/bin/ITK_Video-Release/bin/ITKVideoBridgeVXLTestDriver)
+==24685==  Address 0xb2b75f0 is 0 bytes inside a block of size 10 alloc'd
+==24685==    at 0x4C2864B: operator new[](unsigned long) (vg_replace_malloc.c:305)
+==24685==    by 0x6ABCB7: vidl_ffmpeg_ostream::open() (in /home/xiaoxiao/work/Dashboard/bin/ITK_Video-Release/bin/ITKVideoBridgeVXLTestDriver)
+==24685==    by 0x6AB4C8: vidl_ffmpeg_ostream::write_frame(vil_smart_ptr&lt;vidl_frame&gt; const&amp;) (in /home/xiaoxiao/work/Dashboard/bin/ITK_Video-Release/bin/ITKVideoBridgeVXLTestDriver)
+==24685==    by 0x6999B6: itk::VXLVideoIO::Write(void const*) (in /home/xiaoxiao/work/Dashboard/bin/ITK_Video-Release/bin/ITKVideoBridgeVXLTestDriver)
+==24685==    by 0x5CD2D1: test_VXLVideoIO(char*, char*, char*, char*, unsigned int, unsigned int, unsigned long, double) (in /home/xiaoxiao/work/Dashboard/bin/ITK_Video-Release/bin/ITKVideoBridgeVXLTestDriver)
+==24685==    by 0x5CDE6E: itkVXLVideoIOTest(int, char**) (in /home/xiaoxiao/work/Dashboard/bin/ITK_Video-Release/bin/ITKVideoBridgeVXLTestDriver)
+==24685==    by 0x528BDE: main (in /home/xiaoxiao/work/Dashboard/bin/ITK_Video-Release/bin/ITKVideoBridgeVXLTestDriver)
+==24685== 
+==24685== Invalid free() / delete / delete[]
+==24685==    at 0x4C282E0: free (vg_replace_malloc.c:366)
+==24685==    by 0x651CAAB: av_freep (in /usr/lib/libavutil.so.51.7.0)
+==24685==    by 0x651CF8D: av_opt_free (in /usr/lib/libavutil.so.51.7.0)
+==24685==    by 0x5830526: avcodec_close (in /usr/lib/libavcodec.so.53.6.0)
+==24685==    by 0x6AB1C2: vidl_ffmpeg_ostream::close() (in /home/xiaoxiao/work/Dashboard/bin/ITK_Video-Release/bin/ITKVideoBridgeVXLTestDriver)
+==24685==    by 0x6AB254: vidl_ffmpeg_ostream::~vidl_ffmpeg_ostream() (in /home/xiaoxiao/work/Dashboard/bin/ITK_Video-Release/bin/ITKVideoBridgeVXLTestDriver)
+==24685==    by 0x6AB348: vidl_ffmpeg_ostream::~vidl_ffmpeg_ostream() (in /home/xiaoxiao/work/Dashboard/bin/ITK_Video-Release/bin/ITKVideoBridgeVXLTestDriver)
+==24685==    by 0x699B85: itk::VXLVideoIO::FinishReadingOrWriting() (in /home/xiaoxiao/work/Dashboard/bin/ITK_Video-Release/bin/ITKVideoBridgeVXLTestDriver)
+==24685==    by 0x5CD2FB: test_VXLVideoIO(char*, char*, char*, char*, unsigned int, unsigned int, unsigned long, double) (in /home/xiaoxiao/work/Dashboard/bin/ITK_Video-Release/bin/ITKVideoBridgeVXLTestDriver)
+==24685==    by 0x5CDE6E: itkVXLVideoIOTest(int, char**) (in /home/xiaoxiao/work/Dashboard/bin/ITK_Video-Release/bin/ITKVideoBridgeVXLTestDriver)
+==24685==    by 0x528BDE: main (in /home/xiaoxiao/work/Dashboard/bin/ITK_Video-Release/bin/ITKVideoBridgeVXLTestDriver)
+==24685==  Address 0xb2b75f0 is 0 bytes inside a block of size 10 free'd
+==24685==    at 0x4C27FF2: operator delete(void*) (vg_replace_malloc.c:387)
+==24685==    by 0x6AB163: vidl_ffmpeg_ostream::close() (in /home/xiaoxiao/work/Dashboard/bin/ITK_Video-Release/bin/ITKVideoBridgeVXLTestDriver)
+==24685==    by 0x6AB254: vidl_ffmpeg_ostream::~vidl_ffmpeg_ostream() (in /home/xiaoxiao/work/Dashboard/bin/ITK_Video-Release/bin/ITKVideoBridgeVXLTestDriver)
+==24685==    by 0x6AB348: vidl_ffmpeg_ostream::~vidl_ffmpeg_ostream() (in /home/xiaoxiao/work/Dashboard/bin/ITK_Video-Release/bin/ITKVideoBridgeVXLTestDriver)
+==24685==    by 0x699B85: itk::VXLVideoIO::FinishReadingOrWriting() (in /home/xiaoxiao/work/Dashboard/bin/ITK_Video-Release/bin/ITKVideoBridgeVXLTestDriver)
+==24685==    by 0x5CD2FB: test_VXLVideoIO(char*, char*, char*, char*, unsigned int, unsigned int, unsigned long, double) (in /home/xiaoxiao/work/Dashboard/bin/ITK_Video-Release/bin/ITKVideoBridgeVXLTestDriver)
+==24685==    by 0x5CDE6E: itkVXLVideoIOTest(int, char**) (in /home/xiaoxiao/work/Dashboard/bin/ITK_Video-Release/bin/ITKVideoBridgeVXLTestDriver)
+==24685==    by 0x528BDE: main (in /home/xiaoxiao/work/Dashboard/bin/ITK_Video-Release/bin/ITKVideoBridgeVXLTestDriver)
+==24685== 
+Done !
+|Patch Set 2: (1 inline comment)
+
+
+|Uploaded patch set 3.
+|Patch Set 3:
+
+merged
+|Patch Set 1: Looks good to me, approved
+
+
+|Patch Set 2: I would prefer that you didn't submit this
+
+Something is wrong:
+When i test this patch on Arbor, 
+the entire tree is gone, only the heatmap is there.
+|Patch Set 2: Looks good to me, approved
+
+Tested on Arbor. Looks good now.
+( the bug reported earlier was not triggered by this patch)
+|Uploaded patch set 2.
+|Uploaded patch set 3.
+|Patch Set 1: Looks good to me, approved
+
+
+|Uploaded patch set 2.
+|Uploaded patch set 3.
+|Patch Set 1: Abandoned
+
+This Change doesn't belong any more to the topic 1466
+|Uploaded patch set 2.
+|Patch Set 2: I would prefer that you didn't submit this
+
+please abandon this commit for me. 
+The author info was wrong for this commit.
+|Patch Set 2:
+
+please abandon this commit for me. 
+The author info was wrong for this commit.
+|Patch Set 1: Looks good to me, but someone else must approve
+
+
+|Patch Set 1: Looks good to me, but someone else must approve
+
+Tested in Visomics. Looking good.
+|Patch Set 1: Abandoned
+
+need to reset git name and email. 
+will resubmit.
+|Patch Set 1: Abandoned
+
+already merged
+|Patch Set 1: Fails
+
+Sorry, this change is not ready to merge yet. 
+Still testing LSTK with the modular VTK (6.0), need to take care of the backward compatibility as well.
+|Patch Set 1: Abandoned
+
+this one does not have change id.
+fixes already merged.
+|Uploaded patch set 2.
+|Patch Set 2: Abandoned
+
+already merged
+|Patch Set 1: Looks good to me, approved
+
+Looks good!
+|Patch Set 1:
+
+Need to modify the test for vtkRCalculatorFilter to test&quot;PutTree()&quot; and &quot;GetTree()&quot; functions.
+
+The R tree &lt;=&gt;vtk Tree code is ready to be reviewed, the corresponding test is added to the TestRInterface.cxx.
+|Uploaded patch set 2.
+|Patch Set 2:
+
+Patch set 2 updates the RCalculatorFilter test.
+|Uploaded patch set 3.
+|Uploaded patch set 4.
+|Uploaded patch set 5.
+|Patch Set 5:
+
+patch set 5 is rebased on latest master,with a couple of formatting changes.
+|Uploaded patch set 6.
+|Uploaded patch set 7.
+|Patch Set 7:
+
+Rebased again on master to have the new tool tip feature of the vtkTreeHeatmapItem.
+|Uploaded patch set 8.
+|Patch Set 1: Looks good to me, but someone else must approve
+
+Verified in Visomics, works like a chime!
+Now the font size matches up with the table perfectly.
+Thank you, zack!
+|Patch Set 1:
+
+Jeff, Zack, 
+Will you merge this patch plz?
+Thanks.-Xiaoxiao
+|Patch Set 1: I would prefer that you didn't submit this
+
+Missing header &lt;algorithm&gt;;
+I got errors in my Ubuntu machine (11.10) with gcc 4.6.1:
+
+/home/xiaoxiao/work/src/VTK/IO/Infovis/vtkBiomTableReader.cxx: In member function â€˜void vtkBiomTableReader::ParseColumns()â€™:
+/home/xiaoxiao/work/src/VTK/IO/Infovis/vtkBiomTableReader.cxx:568:81: error: cannot convert â€˜std::basic_string&lt;char&gt;::iterator {aka __gnu_cxx::__normal_iterator&lt;char*, std::basic_string&lt;char&gt; &gt;}â€™ to â€˜const char*â€™ for argument â€˜1â€™ to â€˜int remove(const char*)â€™
+/home/xiaoxiao/work/src/VTK/IO/Infovis/vtkBiomTableReader.cxx: In member function â€˜void vtkBiomTableReader::ParseRows()â€™:
+/home/xiaoxiao/work/src/VTK/IO/Infovis/vtkBiomTableReader.cxx:610:56: error: cannot convert â€˜std::basic_string&lt;char&gt;::iterator {aka __gnu_cxx::__normal_iterator&lt;char*, std::basic_string&lt;char&gt; &gt;}â€™ to â€˜const char*â€™ for argument â€˜1â€™ to â€˜int remove(const char*)â€™
+/home/xiaoxiao/work/src/VTK/IO/Infovis/vtkBiomTableReader.cxx: In member function â€˜void vtkBiomTableReader::ParseId()â€™:
+/home/xiaoxiao/work/src/VTK/IO/Infovis/vtkBiomTableReader.cxx:640:27: error: â€˜countâ€™ is not a member of â€˜stdâ€™
+/home/xiaoxiao/work/src/VTK/IO/Infovis/vtkBiomTableReader.cxx:641:29: error: â€˜countâ€™ is not a member of â€˜stdâ€™
+/home/xiaoxiao/work/src/VTK/IO/Infovis/vtkBiomTableReader.cxx:657:63: error: cannot convert â€˜std::basic_string&lt;char&gt;::iterator {aka __gnu_cxx::__normal_iterator&lt;char*, std::basic_string&lt;char&gt; &gt;}â€™ to â€˜const char*â€™ for argument â€˜1â€™ to â€˜int remove(const char*)â€™
+make[2]: *** [IO/Infovis/CMakeFiles/vtkIOInfovis.dir/vtkBiomTableReader.cxx.o] Error 1
+make[1]: *** [IO/Infovis/CMakeFiles/vtkIOInfovis.dir/all] Error 2
+|Patch Set 1: No score
+
+(1 inline comment)
+
+
+|Patch Set 1: (1 inline comment)
+
+
+|Patch Set 3: Looks good to me, but someone else must approve
+
+
+|Patch Set 1: Looks good to me, approved
+
+
+|Uploaded patch set 2.
+|Patch Set 1:
+
+Please rebase on master (to reflect recent changes on video modules.)
+|Uploaded patch set 2.
+|Patch Set 2: Fails; Do not submit
+
+Patch set 2 rebased on origin/master, with edited merge conflicts.
+
+John, i think you might have accidentally left out the itkOpenCVVideoIO.h, in which the m_ReadType was defined.
+This patch set won't built due to the missing changes in the header file.
+
+The dashboard reports don't count since they don't have opencv and vxl installed.
+|Patch Set 2:
+
+Sebastian's comments were NOT addressed in patch set 2.
+John, please take a look.
+Thanks.
+|Patch Set 2:
+
+Hi John, 
+
+Did you have a chance to work on your patch on this?
+I thought you were working on your original patch set and were planning to upload yours on top of mine.
+
+Should I abandon this patch?
+Please let me know.
+Thanks.
+-Xiaoxiao
+|Patch Set 1: Looks good to me, approved
+
+All tests passed.
+|Patch Set 1:
+
+Arnaud, 
+After adding the new image for testing, the  OpenCVImageBridgeTest
+ is failing when calling the function:
+itkOpenCVImageBridgeTestTemplatedScalar&lt; short,3&gt;
+with the new image. 
+
+itkOpenCVImageBridgeTestTemplatedScalar&lt;unsigned char, 2&gt;
+itkOpenCVImageBridgeTestTemplatedScalar&lt;unsigned char, 3&gt;
+both seems to be fine.
+
+If you have some clues that would be great...
+|Patch Set 2:
+
+Arnaud, 
+Great. Thanks for fixing the grayscale test.
+I agree.  I don't lik the macro function neither. 
+Let's work on the rbg ones and then merge it.
+|Patch Set 4:
+
+Great job.
+I could add a rgb image( 513 by 512 by 10) for testing.
+What do you think?
+|Patch Set 4:
+
+sorry, i meant 512 by 512 rgb image (not by 10).
+|Uploaded patch set 12.
+|Patch Set 12:
+
+Separated scalar and RGB tests.
+Let's  focus on debugging the RGB ones.
+Arnaud, 
+I don't think the original test meant to test reading RGB images as scalar images (or the opposite), so i removed those for now.
+|Patch Set 12:
+
+I agree. 
+Let's fix the rgb test first.
+And later add another test for vectorimage.
+|Uploaded patch set 13.
+|Patch Set 13:
+
+Jpeg lib used in ITK seems to have trouble to read the B channel of the RGB image correctly.
+When using PNG format, the problem is gone. 
+
+However, there are still some problem with 
+ITK-&gt;IplImage conversion needs to be figured out.(
+The RBG test is still failing)
+|Uploaded patch set 14.
+|Patch Set 14:
+
+Added some temp debugging code.
+There are some padding needs to be done for RGB image
+in OpenCVImageBridge::ITKImageToIplImage() function.
+|Patch Set 14: (2 inline comments)
+
+
+|Patch Set 1:
+
+This is the experimental build for this commit:
+
+http://open.cdash.org/viewBuildError.php?type=1&amp;buildid=2296256
+
+Only the real warnings are listed (which will be fixed in a separate patch)
+
+
+Before this commit, there are about 150 warnings:
+
+http://open.cdash.org/viewBuildError.php?type=1&amp;buildid=2294137
+|Uploaded patch set 2.
+|Uploaded patch set 3.
+|Patch Set 3:
+
+Thanks Brad. 
+It actually should be &quot;core.vidl&quot;. vxl is not in between.
+I am testing the patch and will post results soon.
+|Patch Set 3: Verified
+
+Patch set 3 results, working as expected:
+
+http://open.cdash.org/viewBuildError.php?type=1&amp;buildid=2298901
+|Patch Set 2: Looks good to me, approved
+
+
+|Patch Set 1:
+
+Brad, 
+I would think that the super build support should be enabled for externally distributed modules that are well tested( at least have dashboards set up  in the External section of the ITK dashboard) and well maintained. (For example, Lesion sizing toolkit). For people who want to use the module, they could easily get it with the super build support/
+
+On the other hand, people could still manually download their favorite IJ modules in their local External Group folder as they used to do.
+|Patch Set 2:
+
+Arnaud,
+The benefit of downloading remote modules at the configuration time instead of at build time is that you don't have to wait for the build to finish to do the configuration again to enable the module.
+
+Maybe it is a good idea to enable the module (via turning
+on the Module_&lt;name&gt;) automatically right after the Fetching configuration (to avoid the second configuration)?
+
+Excellent work, Matt!
+|Patch Set 2: Verified
+
+
+|Patch Set 2:
+
+Arnaud, 
+
+I agree if you turn on all the Fetch_&lt;remote module&gt; ON, it will download all of them at once, which will take a while.
+
+And by default, those fetch options are OFF.
+
+I suspect people would like to get all the remote modules, they might want to select only a couple according to their interests.
+|Patch Set 2:
+
+On the other hand, if we could make the fetch multithreaded. 
+That would be super cool.
+|Patch Set 2: Looks good to me, approved
+
+
+|Patch Set 1: Looks good to me, approved
+
+
+|Patch Set 1:
+
+I was trying to build this patch with VTK6.0 non modular.
+I got the error msg (which is weird, since the VTK_MAJOR_VERSION should is defined and should not trying to find the Macros header):
+
+/home/xiaoxiao/work/src/ITK/Modules/Bridge/VtkGlue/src/QuickView.cxx:27:30: fatal error: vtkVersionMacros.h: No such file or directory
+compilation terminated.
+make[2]: ***
+|Patch Set 1: Fails; Do not submit
+
+Find out that if you move the #ifndef statements 
+to the bottom of the header include section, 
+the error is gone.
+
+So the VTK_MAJOR_VERSION must be defined in the later
+vtk headers.
+|Patch Set 2: Verified; Looks good to me, approved
+
+Tested with both VTK (5.9) and VTK6.0(modularized version).
+|Patch Set 2: I would prefer that you didn't submit this
+
+Using Remote might be more meaningful in terms of the location of the repository of the module.
+But I would also prefer keep the External group there as it is, to avoid unnecessary changes to users that are already familiar with the concept. As long as we document things clearly.
+
+
+The following patch set (http://review.source.kitware.com/#/c/5275/)
+is trying to add Super Build Capability to the external modules, so that users will be able to get the external modules &quot;automatically&quot; by turn on the &quot;Fetch_&lt;Module&gt;&quot;.
+|Patch Set 2: No score
+
+
+|Patch Set 1:
+
+Code coverage report for GPUThresholding:
+Lines: 	        65 	75 	86.7 %
+Functions: 	19 	23 	82.6 %
+
+Code coverage report for GPUCommon:
+Lines: 	       106 	204 	52.0 %
+Functions: 	58 	120 	48.3 %
+|Patch Set 1:
+
+Code coverage report for GPUSmoothing:
+        hit     total  coverage
+Lines: 	98 	125 	78.4 %
+Functions:24 	36 	66.7 %
+|Patch Set 1:
+
+This is the experimental build from my machine (ubuntu 64, gcc4.5.2,NVIDIA ):
+http://www.cdash.org/CDash/buildSummary.php?buildid=2013194
+
+The single test  itkGPUImageTest passed.
+
+First impression: the gpu modules lack of unit tests.
+|Patch Set 1:
+
+Kris, if you could put the dashboard links to a windows build and a mac build, that would be great!
+|Patch Set 1:
+
+Hi Kris, 
+I think we still need a windows one. 
+Also, do you have time work on adding unit tests?
+|Patch Set 1:
+
+The code coverage report of GPUCommon:
+
+          Hit 	Total 	Coverage
+Lines: 	   42 	112 	37.5 %
+Functions: 14 	31 	45.2 %
+|Patch Set 2: Verified
+
+(2 inline comments)
+
+Verified the newly added test on linux.
+|Patch Set 1:
+
+Kris, since this is the last patch set,  
+Will you put the dashboards results of the mac and windows for this one as well?
+I am going to do the linux one.
+|Patch Set 1:
+
+I assume this module still under development, right now is just a place holder for actual implementations and tests.
+|Patch Set 1:
+
+Transferred to release branch.
+Currently, git gerrit-push can only push topics to master.
+So we have to do it by:
+ git push gerrit HEAD:refs/for/release/&lt;your topic name &gt;
+|Patch Set 1:
+
+The original master branch patch was abandoned:
+    http://review.source.kitware.com/#/c/4871/
+|Uploaded patch set 2.
+|Patch Set 2: Verified
+
+Committed Brad's solution.
+Verified that in the install tree, the &quot; ITKTestDriver &quot;executable is there in the bin directory.
+
+Followed JC's steps to run Cpack,but it seems to be taking a long time to finish? (or maybe i did something wrong in the process)...
+
+JC could you please verify the packaged results? Thanks a lot!
+|Uploaded patch set 3.
+|Patch Set 3:
+
+JC, thanks! You are pretty fast acting...
+I modified the comments accordingly: the cmake language is 
+pretty human-readable, so I shortened your original comments
+a little bit to avoid more typos.... I hope it's ok:P
+|Patch Set 3:
+
+JC,
+All the executable in ITK are only for testing purposes, they are not installed. I would think ITKTestDriver itself is not necessary to exported neither, but it might be convenient if users would like to use it in their own ITK applications.
+|Patch Set 3:
+
+I have tested the packaged ITK with ITKApps:
+1.Build ITK
+2.In the build tree of ITK, do &quot;make package&quot;
+4.Run the generated shell script:ITK-4.2.0-Linux.sh, with specified dir prefix.
+3. Build ITKApps with ITK_DIR pointing to the  specified dir/lib/cmake/ITK04.2, where the ITKConfig.cmake is located.
+
+ITKApps successfully built.
+
+
+
+
+When you only enable the &quot;Development&quot; component when running the cpack, the generated package does not have ITKConfig.cmake. It only contains the headers (include dir) and the libraries (lib dir).Is this expected? I am not sure
+about  the scenarios of only using the Development component of ITK.
+|Uploaded patch set 4.
+|Patch Set 4:
+
+Thanks to Brad's help,
+I went through the install rules in ITK, except the third-party modules.
+
+Checked the resulting Development-only component package, the ITKConfig.cmake and all the ITK headers are there.
+
+Ready to merge.
+|Patch Set 1: Abandoned
+
+wrong branch
+|Patch Set 1:
+
+Bradley, I will transfer this  patch to the release branch once confirmed by JC.
+
+Thanks.
+|Uploaded patch set 2.
+|Patch Set 2: Abandoned
+
+wrong branch
+|Patch Set 1: Abandoned
+
+typo
+|Uploaded patch set 2.
+|Patch Set 2:
+
+An experimental built can be found:
+http://open.cdash.org/buildSummary.php?buildid=2109771
+|Uploaded patch set 3.
+|Patch Set 1:
+
+This commit will fix three testing errors related to 
+image IO error for VHFColor.mhd exposed in :
+http://open.cdash.org/viewTest.php?onlyfailed&amp;buildid=2106673, 
+
+in which I only turned on Video group modules.
+|Patch Set 2: Looks good to me, but someone else must approve
+
+
+|Patch Set 2: Do not submit
+
+Tested with VTK6.0 (both levelset  and vtkglue modules)
+
+One testing failure found: QuickViewTest in ITKVtkGlue Module.
+Looks like need to update the base line image?
+---------------------------------------------------------
+Test command: /home/xiaoxiao/work/bin/ITK/bin/ITKVtkGlueTestDriver &quot;--compare&quot; &quot;/home/xiaoxiao/work/bin/ITK/ExternalData/Modules/Bridge/VtkGlue/test/Baseline/QuickViewTest.png&quot; &quot;/home/xiaoxiao/work/bin/ITK/Testing/Temporary/QuickViewTest0.png&quot; &quot;QuickViewTest&quot; &quot;/home/xiaoxiao/work/bin/ITK/Testing/Temporary&quot;
+4: Test timeout computed to be: 9.99988e+06
+4: &lt;DartMeasurement name=&quot;ImageError QuickViewTest.png&quot; type=&quot;numeric/double&quot;&gt;164356&lt;/DartMeasurement&gt;
+4: &lt;DartMeasurement name=&quot;ImageError&quot; type=&quot;numeric/double&quot;&gt;164356&lt;/DartMeasurement&gt;
+4: &lt;DartMeasurement name=&quot;ImageError Minimum&quot; type=&quot;numeric/double&quot;&gt;2.0038&lt;/DartMeasurement&gt;
+4: &lt;DartMeasurement name=&quot;ImageError Maximum&quot; type=&quot;numeric/double&quot;&gt;243&lt;/DartMeasurement&gt;
+4: &lt;DartMeasurement name=&quot;ImageError Mean&quot; type=&quot;numeric/double&quot;&gt;45.2656&lt;/DartMeasurement&gt;
+4: &lt;DartMeasurementFile name=&quot;DifferenceImage&quot; type=&quot;image/png&quot;&gt;/home/xiaoxiao/work/bin/ITK/Testing/Temporary/QuickViewTest0.png.diff.png&lt;/DartMeasurementFile&gt;
+4: &lt;DartMeasurementFile name=&quot;BaselineImage&quot; type=&quot;image/png&quot;&gt;/home/xiaoxiao/work/bin/ITK/Testing/Temporary/QuickViewTest0.png.base.png&lt;/DartMeasurementFile&gt;
+4: &lt;DartMeasurementFile name=&quot;TestImage&quot; type=&quot;image/png&quot;&gt;/home/xiaoxiao/work/bin/ITK/Testing/Temporary/QuickViewTest0.png.test.png&lt;/DartMeasurementFile&gt;
+4: &lt;DartMeasurement name=&quot;BaselineImageName&quot; type=&quot;text/string&quot;&gt;QuickViewTest.png&lt;/DartMeasurement&gt;
+1/1 Test #4: QuickViewTest ....................***Failed    1.87 sec
+
+0% tests passed, 1 tests failed out of 1
+|Patch Set 2: Looks good to me, approved
+
+
+|Patch Set 1:
+
+When  ITKVideoBridgeVXL is turned on (without turning on the entire Video group), the following missing header error showed up:
+http://open.cdash.org/viewBuildError.php?buildid=2061051
+
+With this commit, the vxl header dir is included earlier during the cmake configuration and the error is eliminated.
+|Uploaded patch set 2.
+|Patch Set 1:
+
+Yes, due to the recent api changes in vtk 6.0, luis
+updated the related ITK code in vtkGlue.
+
+The version number is indeed changed in itk-module-init.cmake.
+|Uploaded patch set 2.
+|Patch Set 2:
+
+itkVTKImageToImageFilter.hxx needs an update as well.
+|Patch Set 2: Verified
+
+
+|Patch Set 1: Abandoned
+|Patch Set 1: Abandoned
+
+It turned out the input data should not affect the test itself. 
+The two remaining testing errors on the windows dashboards are most likely due to the OpenCV version incompatibilities, which are still under investigation.
+|Patch Set 1: Verified; Looks good to me, approved
+
+
+|Patch Set 1: Looks good to me, approved
+
+
+|Uploaded patch set 2.
+|Patch Set 2:
+
+Patch set 2 rebased on origin/master (which contains the latest &quot;DATA{}&quot; syntax commit).
+|Uploaded patch set 3.
+|Patch Set 3:
+
+Fixed a group of &quot;unused parameter&quot; warnings.
+Replaced &quot;unsigned long&quot; with proper itk size type.
+|Patch Set 3: Looks good to me, approved
+
+
+|Patch Set 1: I would prefer that you didn't submit this
+
+Thanks matt. 
+But this variable is only pointing to the data root, not the complete file path, which includes the corresponding module path. So not quite helpful for my case.
+|Uploaded patch set 2.
+|Patch Set 2:
+
+Rebased on master.
+|Patch Set 2: Verified; Looks good to me, approved
+
+Works great!
+Thank you!
+|Patch Set 1: (1 inline comment)
+
+Please see my comment. 
+Thanks.
+|Uploaded patch set 2.
+|Uploaded patch set 3.
+|Patch Set 3:
+
+Fix warnings.
+|Patch Set 1: (1 inline comment)
+
+
+|Uploaded patch set 2.
+|Uploaded patch set 3.
+|Uploaded patch set 4.
+|Patch Set 4:
+
+This patch set should fix both testing errors in win64 machine:
+TemporalProceeObjectTest
+and 
+VideoSourceTest.
+
+Which only appeared in the nightly machine ( not on the cdash client machine).
+|Uploaded patch set 5.
+|Patch Set 1: Abandoned
+
+Merged into previous commit.
+|Patch Set 38: Verified
+
+
+|Patch Set 3:
+
+Hi Michael, 
+Here is the log msg from factory-ubuntu.kitware for this test failure: itkImageRegistrationMethodTest_14. Hope this helps.
+
+
+
+.....
+339 = 1.24253 : [0.00604348, -0.00208408, 0.0870722, 0.996181, -6.28169, -4.0919, -2.24257]
+340 = 1.44946 : [0.00612078, -0.00212343, 0.0865537, 0.996226, -6.03476, -3.84304, -2.21079]
+341 = 1.54087 : [0.00607736, -0.00207888, 0.0868298, 0.996202, -6.0175, -3.86669, -2.29039]
+342 = 1.46028 : [0.006042, -0.00210163, 0.0868654, 0.9962, -6.04887, -3.90689, -2.27256]
+343 = 1.56461 : [0.00615452, -0.00224312, 0.0866099, 0.996221, -6.07963, -4.02837, -2.23872]
+344 = 1.20447 : [0.00606332, -0.00220327, 0.0862543, 0.996252, -6.09269, -4.19973, -2.19219]
+345 = 1.32202 : [0.00584586, -0.00233921, 0.086818, 0.996204, -6.36896, -3.93036, -2.20768]
+346 = 1.32636 : [0.0057647, -0.00243667, 0.0867071, 0.996214, -6.27986, -3.97609, -2.20819]
+347 = 1.29184 : [0.0057341, -0.00242907, 0.0870106, 0.996188, -6.24537, -3.9313, -2.20649]
+348 = 1.32193 : [0.0057198, -0.00241977, 0.0870281, 0.996186, -6.25514, -3.94491, -2.20301]
+349 = 1.45763 : [0.0056535, -0.00246117, 0.0869105, 0.996197, -6.29038, -3.97556, -2.19442]
+Solution is: [0.00531436, -0.00218072, 0.0866853, 0.996219, -6.21383, -3.9589, -2.23724]
+True solution is: [0, 0, 0.0871557, 0.996195, -6.37271, -4.16996, -2]
+Caught expected ExceptionObject
+
+itk::ExceptionObject (0x16fb6d0)
+Location: &quot;void itk::MutualInformationImageToImageMetric&lt;TFixedImage, TMovingImage&gt;::GetValueAndDerivative(const typename itk::ImageToImageMetric&lt;TFixedImage, TMovingImage&gt;::ParametersType&amp;, typename itk::ImageToImageMetric&lt;TFixedImage, TMovingImage&gt;::MeasureType&amp;, typename itk::ImageToImageMetric&lt;TFixedImage, TMovingImage&gt;::DerivativeType&amp;) const [with TFixedImage = itk::Image&lt;float, 3u&gt;, TMovingImage = itk::Image&lt;float, 3u&gt;]&quot;
+File: /home/kitware/Dashboards/Client/base/ITK-Gerrit/Modules/Registration/Common/include/itkMutualInformationImageToImageMetric.hxx
+Line: 407
+Description: itk::ERROR: MutualInformationImageToImageMetric(0x16ee330): Standard deviation is too small
+
+
+Caught expected ExceptionObject
+
+itk::ExceptionObject (0x16fb300)
+Location: &quot;void itk::MutualInformationImageToImageMetric&lt;TFixedImage, TMovingImage&gt;::SampleFixedImageDomain(std::vector&lt;itk::MutualInformationImageToImageMetric&lt;TFixedImage, TMovingImage&gt;::SpatialSample, std::allocator&lt;itk::MutualInformationImageToImageMetric&lt;TFixedImage, TMovingImage&gt;::SpatialSample&gt; &gt;&amp;) const [with TFixedImage = itk::Image&lt;float, 3u&gt;, TMovingImage = itk::Image&lt;float, 3u&gt;]&quot;
+File: /home/kitware/Dashboards/Client/base/ITK-Gerrit/Modules/Registration/Common/include/itkMutualInformationImageToImageMetric.hxx
+Line: 195
+Description: itk::ERROR: MutualInformationImageToImageMetric(0x16ee330): All the sampled point mapped to outside of the moving image
+
+
+Test passed.
+|Patch Set 2:
+
+Hi Brad, 
+
+I tried your instruction on ubuntu:
+ ExternalData_OBJECT_STORES=$HOME/.ExternalData:/media/ExternalData
+ export ExternalData_OBJECT_STORES
+ ccmake ../ITK
+
+The string value of ExternalData_OBJECT_STORES in the cmake gui is still empty.
+
+Did I miss something here?
+|Patch Set 2:
+
+I used the real path of the data dir I have locally ( so the data dir do exist).
+|Patch Set 2: Verified; Looks good to me, approved
+
+
+|Patch Set 1: Looks good to me, approved
+
+
+|Patch Set 2: Looks good to me, approved
+
+
+|Patch Set 2: Looks good to me, but someone else must approve
+
+
+|Patch Set 1: Fails
+
+sorry, the logic is not working properly....
+let me send another patch...
+|Patch Set 1: Verified
+
+Please ignore my previous comments.
+This patch is ready to be reviewed.
+|Patch Set 1: Looks good to me, approved
+
+(1 inline comment)
+
+
+|Patch Set 2: Looks good to me, approved
+
+I have tested this option on my visual studio 2010 express, working as expected.
+
+In terms of performance, not much difference in my experience. I had run two clean builds: the first one had about 100 build errors due to the missing /bigobj option, finished in 1 hour and 33 mins; the other one has the /bigobj added, finished in 1 hour and 13 mins (actually less).
+|Patch Set 1: Fails
+
+
+|Uploaded patch set 2.
+|Patch Set 2:
+
+I am still not sure how aggressive we should be in terms of removing redundancy. We have include guard in each header anyways, so certain redundancy doesn't hurt.
+Especially in the testing code, you could easily include things indirectly without explicit includes , for example &lt;iostream&gt;, &lt;fstream&gt; , itkImage.h are included everywhere.
+
+If we completely remove all redundancy, we are sort of
+enforcing/replying on the header dependencies. It might not be wise in the long run, since the code is constantly evolving.
+
+To test this patch, I recommend to start with a clean build tree(some how &quot;make clean&quot; didn't work for me, i have to start a new build dir to see the errors exposed on the dashboard).
+|Uploaded patch set 3.
+|Uploaded patch set 4.
+|Patch Set 4:
+
+Cory, 
+I had the same concern earlier. It is very time consuming to track down each include dependency, not mention to decide which one to keep according to unpredictable future changes.
+
+Now the windows build exposed more compiling errors( I am still playing with VS2010 locally, it's been quite slow to build large proj on VS2010), I might need to reset a few rules (keeping all the non-itk headers, e.g. vnl headers, time.h, math.h etc.) and redo the include-header stripping to be less aggressive.
+|Uploaded patch set 5.
+|Patch Set 5:
+
+Fixed several windows compiling errors (on VS 2010).
+Will check the mac build the next.
+|Uploaded patch set 6.
+|Patch Set 6:
+
+Patch set 5 has been tested on windows and mac :
+http://www.cdash.org/CDash/buildSummary.php?buildid=1732943
+http://www.cdash.org/CDash/buildSummary.php?buildid=1732989
+
+Patch set 6 has been rebased on master (edited on a group of merge conflicts).
+|Patch Set 6: Fails
+
+
+|Uploaded patch set 7.
+|Patch Set 2: Looks good to me, approved
+
+
+|Patch Set 2: Looks good to me, but someone else must approve
+
+
+|Patch Set 2:
+
+I think you forgot to touch this file:
+
+Modules/Segmentation/LevelSetsv4Visualization/test/vtkVisualize2DMalcolmLevelSetTest.cxx
+
+The old itkBinaryImageToSparseLevelSetImageAdaptor is still there.
+|Patch Set 1:
+
+Brad has found out the following two problems:
+
+  1) The include dir &quot;OpenCV_INCLUDE_DIRS&quot; was not set up correctly inside OpenCV. 
+          Here is the fix: 
+
+[xiaoxiao-ubuntu opencv]$ svn diff OpenCVConfig.cmake.in 
+Index: OpenCVConfig.cmake.in
+===================================================================
+--- OpenCVConfig.cmake.in	(revision 6943)
++++ OpenCVConfig.cmake.in	(working copy)
+@@ -134,6 +134,7 @@
+     foreach(__CVLIB ${OpenCV_LIB_COMPONENTS})
+         # We only need the &quot;core&quot;,... part here: &quot;opencv_core&quot; -&gt; &quot;core&quot;
+         STRING(REGEX REPLACE &quot;opencv_(.*)&quot; &quot;\\1&quot; __MODNAME ${__CVLIB})
++        LIST(APPEND OpenCV_INCLUDE_DIRS &quot;${OpenCV_SOURCE_PATH}/modules/${__MODNAME}/include&quot;)
+         INCLUDE_DIRECTORIES(&quot;${OpenCV_SOURCE_PATH}/modules/${__MODNAME}/include&quot;)
+     endforeach()
+ endif()
+
+
+     I am trying to figure out how to commit this change back to OpenCV SVN repo.
+
+2) The wrong lib path was used in ITKVideoBridgeOpenCV module: 
+     The fix is here: http://review.source.kitware.com/#change,3266
+|Patch Set 7:
+
+It takes about 15 minutes  on my machine to run the itkTimeVaryingVelocityFieldImageRegistrationTest.
+For the testing purpose, we could further reduce the iteration number to reduce the testing time?
+|Patch Set 1:
+
+I used pat's magical python scripts to detect and remove the redundant header includes automatically, followed by some amount of manual fixes.
+
+Need to watch all the tests across platforms to do further fine tuning.
+|Patch Set 1: Abandoned
+
+Too aggressive.
+Will redo this patch.
+|Patch Set 1: Fails; I would prefer that you didn't submit this
+
+I think something weird happened during the git plumbing or something wrong with the gerrit submission.
+
+If you checkout out this topic branch, the module directory is :
+Modules/VideoIO/OpenCV (this is the old git hub repo content),
+which should be Modules/Video/IO instead.
+
+The build error is also associated with the location of the source files.
+
+Patrick, can you squash the two commits (that have actual contents, abandon the other empty commit) into one and resubmit to gerrit?
+|Patch Set 1: No score; No score
+
+Sorry, I would like to take my previous comments back.
+I might have messed up my local repo.
+
+I checked out the topic branch again, and found out the 
+lay out is correct and started the build.
+
+I have build error due to missing header(highgui.h) from the OpenCV library I think. 
+
+Also if you do git blame on any of the source files, seems the history is not there? the author is you stead of Gabe. But I guess when you merge it into master from github, it would be correct again. Am I right?
+|Patch Set 1: (2 inline comments)
+
+
+|Uploaded patch set 2.
+|Patch Set 2:
+
+Merged the &quot;magic&quot; commits that recover the history to master.
+Then rebased the actually changes on the new master.
+
+Fixed a couple of CMake things.
+|Patch Set 2:
+
+Patrick, 
+Will you provide instructions on opencv installation on different platforms?
+Specific version is required?
+I wasn't able to build this patch with opencv installed on my ubuntu neither.
+
+Thanks.
+|Uploaded patch set 5.
+|Patch Set 5:
+
+Fixed the test failure (OpenCVVideoIOTest) by correcting the input parameter (number of frames).
+|Patch Set 5:
+
+Build OpenCV with OPENCV_BUILD_3RDPARTY_LIBS:BOOL=ON.
+
+All four tests should be passing now.
+|Patch Set 6: Looks good to me, approved
+
+
+|Patch Set 1:
+
+already merged. 
+not sure why it is still here.
+|Patch Set 1: I would prefer that you didn't submit this
+
+Nick, is this patch depending on other patches? 
+If so, you might want merge in other patches( or rebase) to solve the module denpendency/missing header problems?
+|Patch Set 1:
+
+It seems to be better to separate the method classes out of RegistrationCommon, and categorize the registration methods into the proper meaningful modules.  It would then cut the circular dependency.
+
+The registration name &quot;Simple&quot; is not very intuitive to me about what metrics are used, what optimizers are used, what kind of objective functions are used. Should we be more careful about the naming so that it helps users to choose the right example to follow?
+
+
+Or maybe we should put the simple registration method into Examples? If this is a just for demonstration of how to use the new registration framework?
+|Uploaded patch set 3.
+|Patch Set 3:
+
+1. Rebased on master (which contains dependency fixes)
+2. Setup a new module &quot;ITKHighDimensionalRegistraionMethods&quot; to hold the simple registration test, which cuts the circular dependency.
+|Uploaded patch set 4.
+|Patch Set 4:
+
+Fixed the doxygen group test failure.
+|Patch Set 10:
+
+I got the exact same image error (5069) on my 64bit ubuntu.
+|Patch Set 1:
+
+To build this module, system installed VXL is needed.
+
+To test this module, I build and installed latest  VXL from source on my ubuntu:
+  http://vxl.sourceforge.net/#download
+
+Need to set up the corresponding dashboards later to test on other platforms. 
+
+If you happen to have vxl installed on other platforms, please verify the tests.
+
+Thank you.
+|Uploaded patch set 2.
+|Patch Set 2:
+
+In this patch set, I added error message when the steam read via vidl_ffstrem  is empty, indicating FFMPEG is missing when building VXL.
+
+Tips for building VXL :
+When cmake-configuring VXL from source, BUILD_VGUI and BUILD_BRL can be turned off. Make sure FFMPEG related 
+libraries are found (check FFMPEG_* library paths).
+
+(A linux machine has been set up for running video modules on nightly dashboard with proper installed OpenCV and VXL.  )
+|Uploaded patch set 3.
+|Patch Set 1:
+
+Thank you very much! Bill!
+|Uploaded patch set 2.
+|Patch Set 2: Looks good to me, approved
+
+
+|Patch Set 1: Abandoned
+
+test gerrit push
+|Uploaded patch set 2.
+|Patch Set 2: Looks good to me, approved
+
+
+|Patch Set 1: I would prefer that you didn't submit this
+
+Brad, 
+I have fixed this in the other gerrit item:
+http://review.source.kitware.com/#change,3003
+
+Thanks for pointing it out.
+|Patch Set 1:
+
+The fix has been already merged via the other gerrit patch.
+|Patch Set 1: Looks good to me, approved
+
+
+|Patch Set 1: Do not submit
+
+already merged to master
+|Patch Set 1: Looks good to me, but someone else must approve
+
+
+|Uploaded patch set 2.
+|Patch Set 2:
+
+rebased on master
+|Uploaded patch set 3.
+|Patch Set 2: Looks good to me, but someone else must approve
+
+
+|Patch Set 3: Looks good to me, approved
+
+
+|Patch Set 1: I would prefer that you didn't submit this
+
+
+|Patch Set 1: Do not submit
+
+already merged to master
+|Patch Set 1: I would prefer that you didn't submit this
+
+
+|Patch Set 1: Do not submit
+
+already merged to master.
+please abandon.
+|Uploaded patch set 2.
+|Patch Set 2:
+
+Second patch fixes build error in ITKReview (due to missing dependency on ITKIOTransform)
+|Uploaded patch set 3.
+|Patch Set 3:
+
+Patch set 3 fixes Doxygen failing test.
+|Uploaded patch set 4.
+|Patch Set 4:
+
+Rebased on origin master.
+|Patch Set 1: Verified; Looks good to me, approved
+
+Thanks for the fix!
+|Patch Set 3:
+
+I agree with Matt.
+
+I am planning to reorganize the IO groups as follows:
+
+1. IO/Base==&gt; IO/ImageBase  
+(to avoid confusion with IO/TransformBase)
+
+2.The rest of the original IO modules are kept in the IO Group, with no change.
+
+3.The new Transform modules (in a different commit) would be :
+IO/TransformBase
+IO/TransformHDF5
+IO/TransformInsightLegacy(txt)
+IO/TransformMatlab
+
+
+Objections?
+|Patch Set 3: Abandoned
+
+Modified in 
+http://review.source.kitware.com/#change,3020
+|Patch Set 1: Looks good to me, approved
+
+
+|Patch Set 1: Looks good to me, approved
+
+Thank you! Matt!
+|Patch Set 1: (4 inline comments)
+
+
+|Uploaded patch set 2.
+|Patch Set 3: Looks good to me, approved
+
+Arnaud, Thanks for the fixes!
+|Patch Set 1:
+
+This build would fail because of missing openCV and vxl libraries.
+
+I am working on reorganize all the modules by tearing this patch to separated smaller gerrit patches.
+
+We could just leave this patch here for reference and abandon it  later.
+|Patch Set 1: Fails; Do not submit
+
+
+|Patch Set 1:
+
+I think  we would end up with the following three modules:
+  
+Modules/Video/Core
+Modules/Video/OpenCV
+Modules/Video/Filter
+
+And we could put VideoIO module into  IO group: 
+  Modules/IO/Video
+
+
+We can add them into ITK  incrementally module by module.
+For the coming release, we probably should aim at adding in :
+     Modules/Video/Core
+|Patch Set 1: Looks good to me, approved
+
+
+|Patch Set 1: I would prefer that you didn't submit this
+
+The corresponding tests in Examples/Registratin/test/CMakeLists.txt need to be enabled too?
+
+Somehow the baseline images used in for DeformableRegistraiton4 &amp;6  are missing:
+   Baseline/DeformableRegistration4(6)TestPixelCentered.png.
+are not in the data repo.
+|Patch Set 1: No score
+
+Sorry, my previous comments were wrong.
+
+The images do exist in the repo and both the DeformableRegistration4 and 6 tests can be run, but with following errors during optimization using LBFGSOptimizer:
+
+
+
+2096: Test timeout computed to be: 1500
+2096: Intial Parameters = 
+2096: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+2096: 
+2096: Starting Registration
+2096: *************************************************
+2096:   N=128   NUMBER OF CORRECTIONS=5       INITIAL VALUES F= 1309.49   GNORM= 92.3512
+2096: *************************************************
+2096:    I   NFN    FUNC        GNORM       STEPLENGTH
+2096:    1    2      1206.186      78.749       0.011
+2096:    2    3       782.313      73.971       1.500
+2096:    3    7       739.759      66.852       0.014
+2096:    4   10       730.948      58.533       0.063
+2096: vnl_lbfgs: Error. Netlib routine lbfgs failed.
+2096:  IFLAG= -1  LINE SEARCH FAILED. SEE DOCUMENTATION OF ROUTINE MCSRCH ERROR RETURN OF LINE SEARCH: INFO= 3 POSSIBLE CAUSES: FUNCTION OR GRADIENT ARE INCORRECT OR INCORRECT TOLERANCESOptimizer stop condition = LBFGSOptimizer: Failure
+2096: Last Transform Parameters
+2096: [-6.11135e-07, -0.000154259, -0.0116066, -0.0628398, -0.0541416, -0.00711067, -0.00010174, -2.56851e-06, -9.09327e-05, -0.0725826, -1.15839, -3.60068, -3.05697, -0.55495, -0.00982002, -7.25478e-05, -0.0066419, -0.723433, -3.80611, -6.70692, -5.68151, -1.85723, -0.287902, -0.00453086, -0.0294064, -1.53336, -3.34034, -1.84568, -1.78492, -3.10614, -1.47408, -0.0306967, -0.0208242, -1.21598, -2.81574, -1.39495, -1.16727, -3.31714, -1.69581, -0.0287269, -0.00274965, -0.284699, -1.5692, -3.65536, -4.18919, -3.42087, -0.822327, -0.00524221, -7.23297e-05, -0.0108296, -0.422443, -2.47639, -3.22429, -1.23465, -0.0896246, -0.000131052, -2.63138e-06, -0.000120918, -0.00911799, -0.0827525, -0.107484, -0.0215114, -0.000299756, -3.54434e-06, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+2096:           Probe Tag    Starts    Stops             Time (s)
+2096:         Registration           1            1           4.98648
+2096:           Probe Tag    Starts    Stops           Memory (kB)
+2096:         Registration           1            1             19432
+2096: &lt;DartMeasurement name=&quot;ImageError&quot; type=&quot;numeric/double&quot;&gt;28961&lt;/DartMeasurement&gt;
+2096: &lt;DartMeasurement name=&quot;ImageError&quot; type=&quot;numeric/double&quot;&gt;28961&lt;/DartMeasurement&gt;
+2096: &lt;DartMeasurementFile name=&quot;DifferenceImage&quot; type=&quot;image/png&quot;&gt;/home/xiaoxiao/work/bin/ITK/Testing/Temporary/DeformableRegistration4TestPixelCentered.png.diff.png&lt;/DartMeasurementFile&gt;
+2096: &lt;DartMeasurementFile name=&quot;BaselineImage&quot; type=&quot;image/png&quot;&gt;/home/xiaoxiao/work/bin/ITK/Testing/Temporary/DeformableRegistration4TestPixelCentered.png.base.png&lt;/DartMeasurementFile&gt;
+2096: &lt;DartMeasurementFile name=&quot;TestImage&quot; type=&quot;image/png&quot;&gt;/home/xiaoxiao/work/bin/ITK/Testing/Temporary/DeformableRegistration4TestPixelCentered.png.test.png&lt;/DartMeasurementFile&gt;
+2096: &lt;DartMeasurement name=&quot;BaselineImageName&quot; type=&quot;text/string&quot;&gt;DeformableRegistration4TestPixelCentered.png&lt;/DartMeasurement&gt;
+1/1 Test #2096: DeformableRegistration4Test ......***Failed    5.60 sec
+
+
+Did we refactor the optimizer at some point?
+|Uploaded patch set 2.
+|Patch Set 2:
+
+Arnaud, 
+Should I use &quot;::itk::SizeValueType&quot; here?
+Thanks.
+|Uploaded patch set 3.
+|Patch Set 3:
+
+The size storage is exactly the same as before:
+vnl_vector&lt; TValueType&gt;::size_type   is &quot;unsigned int&quot; defined in vnl_vector.h.
+
+And all I did is replacing &quot;unsigned int&quot; with the SizeValueType. Not sure why the warning are showing up.
+
+Let me try another gerrit submission after rebasing on master.
+|Uploaded patch set 4.
+|Patch Set 4:
+
+All warnings seem to be gone after the rebase.
+|Patch Set 4: Verified; Looks good to me, approved
+
+Discussed with Hans. 
+Approved.
+|Patch Set 5: (5 inline comments)
+
+
+|Patch Set 6: Verified; Looks good to me, but someone else must approve
+
+Verified in ubuntu. 
+All tests passed.
+
+The code coverage might need some improvements later.
+( I ran computeCodeCoverageLocallyForOneTest.sh on the two modules, got line coverage of  87% on ITKVideoCore and 67% on ITKIOVideo.)
+|Patch Set 7: Fails
+
+
+|Patch Set 1: Looks good to me, but someone else must approve
+
+
+|Patch Set 4:
+
+seems that the dashboard submissions are failing due to the 
+headertest on the vtk related headers.
+
+I suggest to add visualization code into
+ LeveSetsv4/visulaization dir, including the header files. To avoid the header test failure. 
+
+And check the availability of VTK before &quot;add_subdirrectory(visualziation)&quot; in the module's CmakeList.txt.
+
+
+Similar to lesion sizing toolkit module(http://public.kitware.com/LesionSizingKit/index.php/Users/Git_Download)
+|Patch Set 4: Fails
+
+
+|Patch Set 4:
+
+According to bridge group's documentation in ITKGroups.cmake:
+  &quot;This group of modules are intended to bridge ITK to
+ other toolkits as libraries such as visualization toolkits.&quot;
+
+My understanding is that the Bridge modules are &quot;helper&quot; modules that would provide the API for using toolkits like VTK, but should not directly contain modules that have the actual specific application usages, e.g. a visualization module specifically designed for level sets.
+
+If we allow anything uses VTK, later possibly Qt, into the same pot, it might not easy to find things in the long run?
+
+For users who are interested in using LevelSets, it is natural for them to also be interested in visualizing level sets. It is convenient to find out there are some visualization component sitting right inside the module and they could enable this component when needed.
+
+Just my two cents.
+|Patch Set 6: Fails
+
+
+|Patch Set 8: Verified
+
+Verified in linux.
+
+I thought that we reached consensus that we should put the visualization module next to LeveSetsv4 module inside the Segmentation group, didn't we? (http://www.itk.org/mailman/private/insight-developers/2011-September/020388.html)
+|Patch Set 1: Looks good to me, approved
+
+
+|Uploaded patch set 2.
+|Uploaded patch set 3.
+|Patch Set 1:
+
+Patrick, 
+I got the following build errors:
+
+/home/xiaoxiao/work/src/ITK/Modules/Core/Common/test/itkDataObjectTest.cxx: In function â€˜int itkDataObjectTest(int, char**)â€™:
+/home/xiaoxiao/work/src/ITK/Modules/Core/Common/test/itkDataObjectTest.cxx:60: error: â€˜RealTimeClockâ€™ has not been declared
+/home/xiaoxiao/work/src/ITK/Modules/Core/Common/test/itkDataObjectTest.cxx:63: error: base operand of â€˜-&gt;â€™ has non-pointer type â€˜itk::RealTimeStampâ€™
+make[2]: *** [Modules/Core/Common/test/CMakeFiles/ITKCommon1TestDriver.dir/itkDataObjectTest.cxx.o] Error 1
+|Patch Set 1:
+
+Request build: all
+|Patch Set 1: Fails; Do not submit
+
+Not sure why the dashboard submissions are empty.
+|Patch Set 3:
+
+Request build: all
+|Patch Set 3: Verified; Looks good to me, approved
+
+
+|Patch Set 1: Abandoned
+
+done merging
+|Patch Set 1: Abandoned
+
+done merging
+|Patch Set 1: Abandoned
+|Patch Set 1: Abandoned
+|Patch Set 1: Restored
+|Uploaded patch set 2.
+|Uploaded patch set 3.
+|Uploaded patch set 4.
+|Patch Set 2: Looks good to me, approved
+
+Thank you for the fixes, Matt.
+It's a good example for me to follow.
+|Patch Set 5: Verified; Looks good to me, approved
+
+(1 inline comment)
+
+Compiled in ubuntu.
+All tests in v3Compatibility passed.
+|Uploaded patch set 2.
+|Patch Set 2: Abandoned
+
+Fixed in the LSTK itself instead.
+By relocate this special header into the src directory.
+|Patch Set 1: Looks good to me, but someone else must approve
+
+
+|Patch Set 1: Looks good to me, but someone else must approve
+
+
+|Patch Set 1: Do not submit
+
+why those classes need to be put into PDE type of registration? 
+ITKRegistrationPDEDeformable depends on ITKRegistraitonCommon.
+
+Those classes could be potentially used in both PDE and FEM registrations.
+For example, itkMeanSquareRegistrationFunction is used both in FEM and PDEDeformable.
+|Patch Set 2:
+
+Not sure about the module name &quot;VisualImage&quot;.
+Couldn't have a good guess about the functionality of the module directly from the name.
+Alternatives? something more direct? like EnhanceImageColors, ImageColoring ...?
+|Patch Set 2:
+
+or actually, EnhanceImageLabels? or ImageColorLabels...
+It looks like this module deals with label map images only?
+|Patch Set 2:
+
+Gaetan, 
+It's a good idea to have a collection of classes for displaying images.
+
+&quot;Visual&quot; is more of  &quot;visualization&quot; to me, which makes me think of VTK classes (sorry, but I am sitting in a desk surrounded by VTK developers,:P)
+
+ImageFusion or ImageCombine are more of discovering new image features to me. We have a ImageFeature  module for that. But I might be wrong. (hey, none native speaker here.) 
+
+How about ImageDisplay? 
+Sorry for stretching this naming thing...
+At the end, people might still need to refer to the documentation to shop for modules' functionalities. So I am fine with your final decision on either ImageFusion or ImageDisplay or ImageVisualization .
+|Patch Set 1: Looks good to me, approved
+
+
+|Patch Set 1: Looks good to me, but someone else must approve
+
+
+|Patch Set 1: Verified; Looks good to me, but someone else must approve
+
+
+|Patch Set 1: Looks good to me, approved
+
+
+|Patch Set 4: Looks good to me, approved
+
+
+|Patch Set 4: (1 inline comment)
+
+
+|Patch Set 4: Looks good to me, but someone else must approve
+
+
+|Patch Set 5: Looks good to me, approved
+
+
+|Patch Set 1: Looks good to me, approved
+
+
+|Patch Set 1:
+
+Your patch looks good, but as Bill suggested, we might have to replace the whole thing anyway.
+
+I would expect more of &quot;moving classes around&quot; activities during the code review period, not just by the modularization team. When moving a class around, we have to update the header test files accordingly just to make all the tests pass.
+-xx
+|Patch Set 1: Looks good to me, approved
+
+
+|Patch Set 1:
+
+hmm, why this patch is  working on my machine? I did fresh build and double checked.
+-xx
+|Patch Set 1: Abandoned
+|Uploaded patch set 2.
+|Patch Set 2:
+
+Patch 1 missed &quot;ITK-ImageFeature&quot; in ITK-DiffusionSensorImage&quot;Module's dependency list.
+
+Had to start a fresh build to detect this error. 
+Lesson learned: when the module dependencies change, a fresh build is required before submitting to gerrit.
+
+Sorry about that.
+-xx
+|Uploaded patch set 3.
+|Patch Set 3:
+
+Rebased on origin/master.
+Fixed the test failure caused by wrong &quot;\Ingroup&quot;s.
+|Patch Set 2: Verified; Looks good to me, approved
+
+
+|Patch Set 1: Looks good to me, approved
+
+
+|Patch Set 1:
+
+ITK-ImageStatistics_LIBRAIRES actually includes
+ITK-Common_LIBRARIES...
+
+why adding ITK-Common_LIBRARIES solves the problem?
+|Patch Set 1: Do not submit
+
+I think this might be due to the wrong library specified in the  src/CMakeLists.txt related to the change I made earlier on the module dependency list of ITK-Transform.
+
+Will put up a fix on gerrit soon.
+Sorry about that.
+|Patch Set 1:
+
+Cory, Thank you!!
+
+Merged.
+|Uploaded patch set 2.
+|Uploaded patch set 3.
+|Patch Set 3:
+
+Rebased onto the commit that causes the problem.
+|Uploaded patch set 4.
+|Patch Set 4: Abandoned
+
+Patch4's rebase introduced complications (conflicting with a later commit)
+|Patch Set 2: Looks good to me, approved
+
+
+|Patch Set 1: Fails; Do not submit
+
+The dependency is introduced by the itkImageMomentsCalculator.h, exposed only by the newly added tests.
+
+In the HeaderTest of ImaageStatsitics module, itkImageMomentsCalculator was never included (actually documented with a bug number),so the dependency was never exposed.
+|Patch Set 1: Looks good to me, approved
+
+
+|Uploaded patch set 2.
+|Uploaded patch set 3.
+|Uploaded patch set 4.
+|Patch Set 4:
+
+Changes made in this patch:
+1. Moved UnicodeIOTest to ITK-IO-Base.
+2. Fix the test &quot;ModuleInDoxygenGroup&quot;  
+3. Detailed commit msg.
+4. Rebased on master.
+
+itkFilterImageAddTest.cxx  and itkReleaseDataFilterTest.cx  are missing add_test() calls, I couldn't find them even in ITK3.20.
+
+Thank you!
+|Patch Set 1: Abandoned
+
+merged
+|Patch Set 1:
+
+A group of IO tests are failing.
+Need to something extra to use the IO factories in this module.
+|Patch Set 1:
+
+Also need to wait for this patch merged into ITK: http://review.source.kitware.com/#change,1623
+|Patch Set 1: (1 inline comment)
+
+
+|Patch Set 1: Abandoned
+
+replaced by http://review.source.kitware.com/#change,1630
+
+currently, LST doesn't  have change id yet, so gerrit won't recognize amended commits
+|Patch Set 1: Abandoned
+
+wrong gerrit dependency
+|Patch Set 1: Restored
+|Uploaded patch set 2.
+|Uploaded patch set 3.
+|Uploaded patch set 2.
+|Uploaded patch set 3.
+|Patch Set 3: Looks good to me, but someone else must approve
+
+(1 inline comment)
+
+Cory, are you going to do the same thing to all other modules?Group by group? Thanks.
+|Patch Set 4:
+
+there are two failing tests?
+|Patch Set 1:
+
+Dashboard for this commit can be found in:
+http://my.cdash.org/index.php?project=LesionSizingToolkit
+
+Three testing failures due to missing baseline images.
+|Patch Set 1: Verified; Looks good to me, approved
+
+
+|Patch Set 1: Abandoned
+
+merged
+|Patch Set 1: Abandoned
+
+repeated
+|Patch Set 1: Abandoned
+
+merged
+|Patch Set 1: Abandoned
+
+merged
+|Patch Set 1: Looks good to me, approved
+
+cool
+|Patch Set 3: (1 inline comment)
+
+I have experienced the similar cdash submission problems.
+The Mac one is always the fastest to finish. Linux and windows
+usually have some delays but it should provide links.
+|Patch Set 4: Looks good to me, but someone else must approve
+
+
+|Patch Set 1: Looks good to me, approved
+
+
+|Patch Set 1: Looks good to me, approved
+
+
+|Patch Set 2: Looks good to me, approved
+
+
+|Patch Set 1: (1 inline comment)
+
+Will submit another patch.
+|Uploaded patch set 2.
+|Patch Set 2: (1 inline comment)
+
+Dave, 
+It turns out that itkFilterImageAddTest is missing 
+its corresponding add_test() back in ITK3.20.
+
+I will leave this test in IntegreatedTest for now. 
+Will add a test command for it in a separate commit later.
+
+I have another local commit (about 15 more tests categorized) that is not tested yet. I am not going to push for review for now, will rebase it on your itk_add_test change later.
+
+Thanks!
+|Patch Set 13: (1 inline comment)
+
+
+|Patch Set 4: Looks good to me, approved
+
+(1 inline comment)
+
+All looking good except one line in the HeaderTest.cxx.
+|Patch Set 1:
+
+Arnaud,
+You can use:
+
+&quot;${$itk-module}_SOURCE_DIR}/include&quot;
+
+to get the include dir for each module.
+
+
+&quot;$itk-module}_INCLUDE_DIRS&quot; were defined locally in the ITK/CMake/ITKModuleMacros.cmake, and therefore were not directly usable in your doxgen cmake files.
+|Patch Set 2: (1 inline comment)
+
+
+|Patch Set 2: (1 inline comment)
+
+
+|Patch Set 2: (1 inline comment)
+
+
+|Patch Set 1: Looks good to me, but someone else must approve
+
+
+|Patch Set 1: Abandoned
+
+testing done
+|Uploaded patch set 2.
+|Patch Set 1: Looks good to me, but someone else must approve
+
+
+|Patch Set 1: Looks good to me, approved
+
+
+|Patch Set 1: Looks good to me, approved
+
+Nicely done.
+
+I put this patch as an example of &quot;how to add module&quot; in the wiki:
+http://www.itk.org/Wiki/ITK_Release_4/Modularization/_Add_a_module
+|Patch Set 1: Looks good to me, approved
+
+Considering all other modules right now only belong to one group, it makes sense to remove ITK-LevelSets from Filtering.
+|Patch Set 1: Looks good to me, but someone else must approve
+
+(1 inline comment)
+
+
+|Uploaded patch set 2.
+|Patch Set 2:
+
+rebased on top of the master.
+Will see the cdash@home testing results.
+|Patch Set 1: Verified; Looks good to me, approved
+
+
+|Uploaded patch set 2.
+|Patch Set 2: (1 inline comment)
+
+
+|Patch Set 1: Looks good to me, but someone else must approve
+
+
+|Uploaded patch set 2.
+|Patch Set 2:
+
+Sorry, patch set 1 was the wrong version.
+|Uploaded patch set 3.
+|Patch Set 3:
+
+Done. 
+As Brad suggested.
+Thanks!
+|Uploaded patch set 2.
+|Patch Set 2:
+
+Not ready yet.
+Will need to work on code sharing between  itkTestDriverInclude.h and itkTestDriver.cxx.
+|Uploaded patch set 3.
+|Patch Set 3:
+
+All the tests examples passed.
+
+I basically copied the major part of GaÃ«tan's itkTestDriver.cxx in
+http://review.source.kitware.com/#change,1230.
+
+So Gaetan could make use of this function in this wrapping code as well.
+
+But still need to work on moving some of the code in the main function of itkTestDriver.cxx to  itkTestDriverInclude.h  to reduce duplicated code.
+|Uploaded patch set 5.
+|Patch Set 5:
+
+Removed old test driver code (*Examples*.cxx).
+Merged Gaetan's test driver code into itkTestDriverInclude.h
+|Uploaded patch set 6.
+|Patch Set 6:
+
+Removed itkTestMain.h (added by patch set 1, but not used later)
+
+
+Ready for review.
+|Uploaded patch set 7.
+|Patch Set 7: Verified
+
+(1 inline comment)
+
+In itkTestDriverInclude,h, removed some code which was copied from Gaetan's patch (http://review.source.kitware.com/#change,1230.).  
+
+itksys/SharedForward.h is probably only useful for wrapping.
+Gaetan might add them back after modification for using this test driver code for wrapping. This should be in a separate patch anyway.
+|Uploaded patch set 8.
+|Patch Set 8:
+
+Fixed typos in commit msg.
+|Patch Set 8:
+
+Gaetan, 
+Sorry, I completely missed your patch 4 till you pointed it out.
+I will try figure out the changes you made in patch4 and combined it into the next patch.
+|Patch Set 2: Looks good to me, but someone else must approve
+
+
+|Patch Set 1:
+
+thanks!
+|Uploaded patch set 2.
+|Uploaded patch set 3.
+|Patch Set 1: Fails; I would prefer that you didn't submit this
+
+(1 inline comment)
+
+
+|Patch Set 2: Looks good to me, approved
+
+
+|Patch Set 1: Looks good to me, but someone else must approve
+
+
+|Uploaded patch set 2.
+|Uploaded patch set 3.
+|Patch Set 1: Looks good to me, approved
+
+
+|Patch Set 1: Abandoned
+|Patch Set 1:
+
+&quot;ITK_USE_REIVEW&quot; is kind of special.
+Some of the source codes  (itkConnectedThresholdImageFilterTest.cxx)
+uses  &quot;ITK_USE_REVIEW&quot;.
+
+Shall we eliminate its usage in ITK?
+|Patch Set 1: Abandoned
+
+merged.
+
+Somnehow the commit msg on gerrit didn't contain the Change-Id. When I merged this patch, it didn't show up as merged on gerrit.
+
+The Change-Id of this one is:
+  I64875d9186e107404005fb1f81cf6ae893bb2d68
+|Uploaded patch set 2.
+|Patch Set 1: Abandoned
+
+merged
+|Patch Set 1: Abandoned
+
+merged
+|Patch Set 1: Abandoned
+
+merged
+|Patch Set 1: Abandoned
+
+merged
+|Patch Set 1: Looks good to me, approved
+
+
+|Patch Set 1:
+
+The four files are located in TestKernel/include right now.
+As long as ITK-Deprected depends on ITK-TestKernel, 
+I didn't see how the duplication is necessary.
+|Patch Set 2: Verified; Looks good to me, but someone else must approve
+
+(1 inline comment)
+
+
+|Patch Set 2: Looks good to me, approved
+
+
+|Patch Set 2: Looks good to me, approved
+
+
+|Patch Set 2: Verified; Looks good to me, but someone else must approve
+
+
+|Patch Set 1: Looks good to me, approved
+
+
+|Uploaded patch set 2.
+|Uploaded patch set 2.
+|Uploaded patch set 3.
+|Patch Set 3:
+
+Luis suggested that we enable all the modules for now to mimic the monolithic tree, just to avoid confusions during the transition. 
+
+This change doesn't belong to this patch.
+I could single it out from this patch.
+|Patch Set 1: Abandoned
+
+resubmitted to
+http://review.source.kitware.com/#change,1171
+|Patch Set 1: Looks good to me, but someone else must approve
+
+
+|Patch Set 1: Fails; No score
+
+Make Error: INSTALL(EXPORT) given unknown export &quot;ITK-Examples-targets&quot;
+|Patch Set 1: (1 inline comment)
+
+
+|Patch Set 1: No score
+
+(1 inline comment)
+
+
+|Patch Set 1: Looks good to me, but someone else must approve
+
+
+|Patch Set 1: (1 inline comment)
+
+
+|Uploaded patch set 2.
+|Patch Set 1: Looks good to me, approved
+
+
+|Uploaded patch set 2.
+|Uploaded patch set 3.
+|Uploaded patch set 2.
+|Patch Set 2: Fails
+
+Brad,  
+It seems that some further modifications are needed in the cmake configuration for Expat to work in modular ITK:
+error: target &quot;ITKEXPAT&quot;  is not in the export set.
+
+The target are different in monolithic ITK and modular ITK.
+Shall we add itk_module_target() in src/CMakeLists.txt ?
+|Uploaded patch set 3.
+|Uploaded patch set 4.
+|Patch Set 1: Abandoned
+|Patch Set 1: (2 inline comments)
+
+
+|Patch Set 1: (2 inline comments)
+
+
+|Patch Set 1: (1 inline comment)
+
+
+|Uploaded patch set 2.
+|Uploaded patch set 3.
+|Patch Set 3:
+
+sorry,  this is the wrong patch,
+i pushed another patch last night, it didn't go through...
+will try again
+|Uploaded patch set 4.
+|Patch Set 4: (1 inline comment)
+
+
+|Uploaded patch set 5.
+|Uploaded patch set 2.
+|Uploaded patch set 3.
+|Patch Set 1: Looks good to me, approved
+
+
+|Patch Set 1: Looks good to me, approved
+
+
+|Patch Set 1: Looks good to me, approved
+
+
+|Uploaded patch set 2.
+|Uploaded patch set 3.
+|Uploaded patch set 2.
+|Uploaded patch set 3.
+|Uploaded patch set 4.
+|Patch Set 1: Looks good to me, approved
+
+
+|Patch Set 1: Looks good to me, approved
+
+
+|Uploaded patch set 2.
+|Uploaded patch set 3.
+|Uploaded patch set 4.
+|Uploaded patch set 2.
+|Patch Set 2: Verified
+
+
+|Patch Set 1: Looks good to me, approved
+
+
+|Uploaded patch set 2.
+|Patch Set 1: Looks good to me, approved
+
+Perfect.
+|Uploaded patch set 2.
+|Uploaded patch set 3.
+|Uploaded patch set 4.
+|Uploaded patch set 5.
+|Uploaded patch set 6.
+|Uploaded patch set 2.
+|Uploaded patch set 3.
+|Patch Set 1: Looks good to me, approved
+
+
+|Patch Set 1: Looks good to me, approved
+
+
+|Patch Set 1: Looks good to me, but someone else must approve
+
+
+|Patch Set 1: Looks good to me, approved
+
+
+|Patch Set 1: Looks good to me, but someone else must approve
+
+Won-Ki, I am working on enabling regression test in modular ITK.  To use regression tests in your GPU module (use &quot;-compare&quot; in your add_test() ), we need to modify 
+test/CMakeLists.txt to use the new cmake macro &quot;CreateTestDriver&quot;. 
+I will work with you on this later.
+|Uploaded patch set 2.
+|Uploaded patch set 3.
+|Patch Set 3:
+
+This commit actually doing three things.
+I should have put them in three commits....
+Sorry, this make it harder to review.
+
+I am still waiting for my local build to finish. So it's not full verified yet.
+|Uploaded patch set 2.
+|Patch Set 2:
+
+I am still building this modular ITK on my local machine...
+It will take some time.
+|Uploaded patch set 3.
+|Uploaded patch set 4.
+|Patch Set 4:
+
+submitted from mac, the sorting now is consistent with the previous commit
+|Uploaded patch set 2.
+|Uploaded patch set 2.
+|Patch Set 2: Fails; Do not submit
+
+had a better solution
+|Patch Set 2: Abandoned
+|Uploaded patch set 2.
+|Uploaded patch set 3.
+|Uploaded patch set 4.
+|Patch Set 1: Verified
+
+(1 inline comment)
+
+This commit solves most of the IO test failures (about 120) by breaking the circular dependency between TestKernel and IO-PNG/Meta.
+|Patch Set 1: Looks good to me, approved
+
+
+|Patch Set 1: No score
+
+
+|Patch Set 1: Abandoned
+
+merged (rebased) into 
+http://review.source.kitware.com/#change,1039
+|Uploaded patch set 2.
+|Patch Set 2: Verified
+
+
+|Patch Set 2: Looks good to me, approved
+
+
+|Uploaded patch set 2.
+|Uploaded patch set 3.
+|Patch Set 3: Looks good to me, approved
+
+
+|Uploaded patch set 2.
+|Patch Set 2: Looks good to me, approved
+
+
+|Patch Set 1: Verified
+
+
+|Uploaded patch set 2.
+|Uploaded patch set 3.
+|Uploaded patch set 2.
+|Uploaded patch set 3.
+|Uploaded patch set 4.
+|Patch Set 4: Verified; Looks good to me, approved
+
+rebased to combine three commits into one
+|Patch Set 1: (2 inline comments)
+
+those test entries are repeat twice in the manifest, 
+reported by the missingFile.log
+|Patch Set 1: Looks good to me, approved
+
+
+|Patch Set 1: Abandoned
+
+http://review.source.kitware.com/#change,1006
+|Patch Set 1: Abandoned
+
+merged into http://review.source.kitware.com/#change,1000
+|Patch Set 1: Verified; Looks good to me, approved
+
+
+|Uploaded patch set 2.
+|Patch Set 2:
+
+This module is disabled in modular ITK for now and not tested yet.
+Just want to show Wonki about the cmake code conventions in modularized ITK, so that later it's easier for him to contribute his code to modular ITK.
+|Uploaded patch set 2.
+|Patch Set 2:
+
+1.It's better to view the NewManifest.txt in your local editor since each line is pretty long.
+2.Run reorganizeModules.py to generate NewManifest.txt.
+3.Need to manually capitalize some of the IO modules' names later.
+4.The group name column at this point is redundant, since it's part of the directory path. Will be working on removing it.
+|Uploaded patch set 3.
+|Patch Set 3:
+
+In patch 3, I uppercased  a group of strings in the module name:
+UpperCaseList=['io','ipl','bmp','pde','nrrd','png','gipl','nifti','vtk','ge','meta','tiff','raw','gdcm','jpeg','lsm','zlib','openjpeg','expat','xml','klm']
+|Patch Set 3:
+
+There is no itk-io-openjpeg module. itk-openjpeg is one of the third-party utility modules, which are not listed in the Manifest.txt right now.
+
+I prefer to leave those third-party utility modules'(not their IO modules') name unchanged for now, and make the changes when I adding them to the Manifest.txt later.
+|Uploaded patch set 4.
+|Uploaded patch set 5.
+|Uploaded patch set 6.
+|Uploaded patch set 7.
+|Patch Set 7: Abandoned
+
+Merged into 
+http://review.source.kitware.com/#change,957
+|Uploaded patch set 2.
+|Uploaded patch set 3.
+|Patch Set 1: Abandoned
+|Uploaded patch set 2.
+|Patch Set 2: (1 inline comment)
+
+I have rebased this topic branch upon origin/master and adjusted the manifest according to the actually dependencies among modules(tested compilation).
+For example, some files in image-adapters have been moved back to itk-common.  
+Also created itk-image-compose, itk-image-label , itk-image-gradient according to Gaetan's suggestion.
+|Patch Set 1: Abandoned
+
+merged into patch 2 of http://review.source.kitware.com/#change,875
+|Uploaded patch set 2.
+|Uploaded patch set 3.
+|Uploaded patch set 2.
+|Patch Set 2:
+
+Hi Bill, 
+I think somehow this patch was not merged into your branch correctly.
+I didn't see GDCM test related changes in your gerrit 779 (UseCMakeTestDriver)or the latest ITK.
+
+Shall I work on a new gerrit item for this?
+Thanks.
+
+-xiaoxiao
+|Uploaded patch set 2.
+|Uploaded patch set 2.
+|Uploaded patch set 2.
+|Patch Set 1:
+
+Forgot to add #endif in itkPipelineMonitorImageFilter.h in the first patch.
+Fixed in the second patch.
+|Uploaded patch set 3.
+|Patch Set 3:
+
+Removing redundant tests reported in AddTestWithArgument.txt.
+
+Monolithic ITK has the same &quot;*DecisionRule*&quot; tests added twice in two different places.
+Therefore, modularization script will pick the two identical tests and write into one CMakeList.txt, which causes CMake configuration error.
+|Uploaded patch set 4.
+|Patch Set 4:
+
+Fixed the error in itkBayesianClassifierImageFilterTest.cxx.
+|Uploaded patch set 5.
+|Patch Set 1: Abandoned
+
+will resubmit
+|Patch Set 1: Restored
+|Uploaded patch set 2.
+|Uploaded patch set 3.
+|Uploaded patch set 2.
+|Patch Set 3: Verified; Looks good to me, but someone else must approve
+
+
+|Uploaded patch set 2.
+|Patch Set 2: Looks good to me, but someone else must approve
+
+
+|Uploaded patch set 2.
+|Uploaded patch set 3.
+|Patch Set 1: Looks good to me, approved
+
+
+|Patch Set 1: Looks good to me, but someone else must approve
+
+
+|Patch Set 1: Abandoned
+
+Already merged
+|Patch Set 1: Abandoned
+
+Already merged.
+|Patch Set 1: Abandoned
+
+Already merged.
+|Uploaded patch set 2.
+|Uploaded patch set 3.
+|Patch Set 1: Abandoned
+
+Was combined into later commit.
+Already merged into master.
+|Uploaded patch set 3.
+|Patch Set 3:
+
+In the 3rd patch, the usage of DicomImageIO and DICOMSeriesFileNames is disabled for modularized ITK.
+
+I am still waiting for the build on my machine, but I want to make use of the computing resources provided through gerrit, so I pushed it here  without fully validation. (let me know if this is a bad thing to do)
+
+(Sorry, I changed the Topic name by mistake.)
+|Uploaded patch set 4.
+|Uploaded patch set 5.
+|Uploaded patch set 6.
+|Uploaded patch set 7.
+|Patch Set 1: Abandoned
+
+There are some other relative paths in other sub python scripts needed to be modified too.
+
+It's better to do it together later. Besides,  running the scripts outside the Modularization directory is not a necessary feature anyways.
+|Patch Set 2: Verified; Looks good to me, but someone else must approve
+
+Looks good to me.
+|why not use
+q.CastFrom(p);
+|Do we have to insert both Left and Right faces? Doesn't insert Left face enough?
+|why not use q.CastFrom(p);
+|Is there performance improvement by changing from vector to list when
+only the push_back() operation was conducted for the container?
+|It's a stupd mistake. I treat the number of entry of connectivity array as number of edges.
+|Just for inspect the results. Since i have checked the results, i will remove the output part.
+|Will do
+|will do.
+|Uploaded patch set 2.
+|Uploaded patch set 3.
+|Uploaded patch set 4.
+|Patch Set 4:
+
+Most comments from Arnaud has been addressed except the following points.
+
+1. TriangleEdgeCellSubdivisionQuadEdgeMeshFilter::SubdivisionCellContainer
+was kept back to std::list&lt;&gt; not std::set&lt;&gt;
+I tested both containers on my laptop (for all the data ico, plane and venus)
+It takes 27-30 seconds for std::list&lt;&gt;
+However it takes 40+ seconds for std::set&lt;&gt;
+I guess the insertion consumed a lot of time using std::set&lt;&gt;
+
+2. In itkIterativeTriangleCellSubdivisionQuadEdgeMeshFilter::AddSubdividedCellId()
+Adding a new cell will change the the member variable
+m_CellsToBeSubdivided
+Therefore the filter should be updated according to the update of its member.
+So I call the Modified() function. Why should we not call Modified()?
+
+
+3. itkSquareThreeTriangleCellSubdivisionQuadEdgeMeshFilter
+I think adding a Exception is not approriate, Since I do it on purpose to avoid processing 
+this edge again which had been processed during splitting it's neighborhood.
+|Patch Set 4:
+
+Thanks Arnaud, I will focus on the documents in this weekend.
+|Patch Set 5:
+
+I downloaded the data set several years ago. I can not remember where did I get it now. I will try to find it otherwise I will change another test data.
+|Patch Set 10:
+
+First of all, I would like to say sorry for not finishing the documentation for so long time. It may took me some time to have a decent documentation but I may not have the time. Arnaud has done many works to the classes and he is good at the methods. He would add the documentations. Thanks Arnaud.
+|Patch Set 1: Looks good to me, but someone else must approve
+
+
+|Patch Set 4: Looks good to me, but someone else must approve
+
+
+|Patch Set 1: Looks good to me, but someone else must approve
+
+
+|Patch Set 3: Looks good to me, but someone else must approve
+
+
+|Patch Set 4: Looks good to me, approved
+
+
+|Patch Set 2: Looks good to me, but someone else must approve
+
+(3 inline comments)
+
+
+|Patch Set 1: Verified; Looks good to me, but someone else must approve
+
+
+|Patch Set 1: Verified; Looks good to me, but someone else must approve
+
+
+|Patch Set 2: (1 inline comment)
+
+
+|Patch Set 2: Verified; Looks good to me, but someone else must approve
+
+
+|Patch Set 2: Looks good to me, but someone else must approve
+
+
+|Patch Set 2: Looks good to me, but someone else must approve
+
+
+|Patch Set 3: Looks good to me, but someone else must approve
+
+
+|Uploaded patch set 2.
+|Uploaded patch set 3.
+|Uploaded patch set 4.
+|Uploaded patch set 5.
+|Uploaded patch set 6.
+|Uploaded patch set 7.
+|Uploaded patch set 8.
+|Uploaded patch set 10.
+|Patch Set 2: I would prefer that you didn't submit this
+
+When dealing with 2D Mesh, i always use point dimension = 3 ?so paraview could load/write it), Is there any reason you must handle it with point dimension = 2?
+|Patch Set 2:
+
+Gouaillard
+Ok, You are right. Previously i didn't find any related knowledge from the VTK legacy format, so i though it is not effective in general. I also put some changes in the Read/WritePointsBufferAsBINARY(). Hope you could help submit them to the current change.
+|Patch Set 4:
+
+The reason why m_PointDimension is set as 3 is based on the following reasons:
+1. In the document VTK File format version 4.2. In terms of polygon data. the point coordinates should always be
+P0x P0y P0z
+.....
+So i suppose the point dimension should be 3.
+
+2. In vtkPolyDataReader::ReadPoints(). It always read an array with 3 components.
+
+3. This point dimension definition is defined in vtkPolyDataMeshIO::ReadMeshInformation(). The point dimension defined here is only related to the point dimension defined in the data file (as aforementioned, i think it should be set to 3). In other words, it has nothing to do with point dimension of MeshType. Basically we could refer them as two kinds of point dimension, pointDimensionFromFile and pointDimensionFromMesh. They could be not equivalent as long as converting buffer defined in ReadPoints() from datafile to itk::Mesh::PointsBuffer makes sense. For instance you have a 3D file while try to define a 2d mesh, Just put the first two coordinates into your mesh point, like the changes you have done in your previous patch.
+|Patch Set 1: (1 inline comment)
+
+It is stupid mistakes. according to http://paulbourke.net/dataformats/moviebyu/
+The item should be number of entries in the connectivity array.
+|Uploaded patch set 3.
+|Patch Set 3:
+
+In Bill's patch, OBJMeshFileIO could handle point normal data. We further two other bugs.
+
+1. In previous version, it assumes that the number of point pixel equals to number of points.
+We changed it to make them not necessary to be equivalent.
+
+2. In previous version, it assumes that the output point data is vector with 3 components no matter what the actual point pixel type. 
+Now i add exception when point pixel is not vector with 3 components.(Based on  http://en.wikipedia.org/wiki/Wavefront_.obj_file
+It seems that obj file format only supports vector with 3 componets).
+
+3. In previous test the mesh point pixel is float, however obj doesn't support scalar point data. 
+So we change this test to read writh mesh data with vector.
+|Patch Set 3: Looks good to me, but someone else must approve
+
+
+|Uploaded patch set 3.
+|Patch Set 3:
+
+Patch Set3, Remove compilation errors under Windows platform.
+|Uploaded patch set 4.
+|Patch Set 4:
+
+Patch Set4
+Remove the header test. The test driver should be able compile on Windows.
+|Uploaded patch set 5.
+|Uploaded patch set 6.
+|Patch Set 8:
+
+Hi Matt,
+     Thank you for fixing the memory leak. It makes the MeshIO close to get merged. I am trying to fix the failed tests for 64 bits built on Windows. Regarding the test data, you are right, i will find some smaller ones.  
+
+many thanks
+
+wanlin
+|Uploaded patch set 9.
+|Patch Set 9:
+
+This patch removes bugs detected on Win64 platform. Other reviewers' concern will be addressed in next patch.
+|Uploaded patch set 10.
+|Patch Set 10:
+
+Change all the tests using itkVTKPolyDataReader/Writer 
+itkMeshFileReader/Writer as well as related dependencies. Next patch will reduce the size of test data.
+|Uploaded patch set 11.
+|Patch Set 11:
+
+In this Patch:
+1. Reduce test data size.
+2. Add comments to MeshIOFactory
+3. Remove Visual Studio 6 related compiler warnings.
+|Patch Set 1: Abandoned
+
+push the wrong patch
+|Patch Set 1: I would prefer that you didn't submit this
+
+The changes are right, it can be proved from the paper &quot;Intrinsic Parameterizations of Surface Meshes&quot;. But the formula (line 196) need update as well.
+|Uploaded patch set 2.
+|Patch Set 2:
+
+To Write VoronoiDiagram2D using VTKPolyDataWriter, in the previous version, we must use VoronoiDiagram2D::Superclas as
+template argument of VTKPolyDataWriter. Additionally, explicitly add points is required. See wiki example
+http://www.itk.org/Wiki/ITK/Examples/Segmentation/WishList/VoronoiDiagram2DGenerator
+
+With the new version. it could be used as a Mesh.
+|Uploaded patch set 3.
+|Uploaded patch set 4.
+|Patch Set 1:
+
+When i am trying to add patch 2 for ImageBoundaryFacesCalculator, i made a number of mistakes. I have to abandon it and open a new thread. 
+
+Compare with the last patch, i have removed option m_DuplicateOverlap since duplicate behavior has been considered as a bug. Change rrSize/rrStart to vrSize/vrStart and add comments.
+Add new test. But i can not update two new baseline image
+&quot;GeodesicActiveContourShapePriorCallosumTest.png&quot; and
+&quot;WatershedSegmentation1Test1.png&quot; because they are in the submodule. Can anyone tell me how to add them into the patch?
+|Patch Set 1: (3 inline comments)
+
+I will add tests for 1,3,4 dimension and check the KWstyle.
+ 
+In the previous version, the patch incurred 3 tests failure. One has been fixed in this version.
+
+The other two failures
+1816 - GeodesicActiveContourShapePriorCallosumTest (Failed)
+1822 - WatershedSegmentation1Test1 (Failed)
+failed because new output differ with baseline images, &quot;GeodesicActiveContourShapePriorCallosumTest.png&quot; and &quot;WatershedSegmentation1Test1.png&quot;
+I don't know how to upload the two new images to Testing/Data/Baseline/Segmentation as it is in the submodule. Although i changed the two images and commit them, they don't appear in this gerrit patch. 
+
+I will look into whether this patch cause other test failures.
+|Uploaded patch set 2.
+|Patch Set 2:
+
+Hi, Bradley, I have made changes according your suggestions. Add more tests for dimension 1,3 and 4. 
+I test the new patch, KWStyleCodeTest succeeded. 
+Tow failure were introduced by this patch, but they will disappear when add (corrected) baseline images. 
+1816 - GeodesicActiveContourShapePriorCallosumTest (Failed)
+1822 - WatershedSegmentation1Test1 (Failed)
+|Patch Set 2:
+
+Hi, David, 
+   You figure is very nice,  may be it could be put into the PDF file later. I have added more comments as you suggested, hope they make you satisfied :-)
+|Patch Set 2:
+
+Thanks all. Thanks David and Bradley for uncovering this bug.
+|Patch Set 3:
+
+Hi, Hans
+Have you updated the two baseline figures?
+Testing/Data/Baseline/Segmentation/GeodesicActiveContourShapePriorCallosumTest.png
+Testing/Data/Baseline/Segmentation/WatershedSegmentation1Test1.png
+
+For GeodesicActiveContourShapePriorCallosumTest (Failed)
+The errors could be traced back to itk::ScalarAnisotropicDiffusionFunction&lt;Image&gt;::CalculateAverageGradientMagnitudeSquared(TImage *ip)
+When duplicate regions exist, the gradient magnitudes of part of boundary regions have been counted twice or three times depends on image dimension and locations .
+
+For WatershedSegmentation1Test1 (Failed)
+The error could be traced back to itk::VectorAnisotropicDiffusionFunction&lt; TImage &gt;::CalculateAverageGradientMagnitudeSquared(TImage *ip) and has the same reason for the error.
+
+I think the two baseline figures were generated when duplicated regions exist. i suggest to replace them with new produced figures after apply the patch.
+|Patch Set 1: Abandoned
+
+make mistake
+|Patch Set 1:
+
+The ImageBoundaryFacesCalculator will produce duplicate boundary regions at corners.
+
+For example, for requestedregion size = 5x5 image with radius = 1, The previous version of ImageBoundaryFacesCalculator will give
+Number of pixels : 9
+ImageRegion (0x18ad830)
+  Dimension: 2
+  Index: [1, 1]
+  Size: [3, 3]
+
+Number of pixels : 5
+ImageRegion (0x18ad870)
+  Dimension: 2
+  Index: [0, 0]
+  Size: [1, 5]
+
+Number of pixels : 5
+ImageRegion (0x18ad8b0)
+  Dimension: 2
+  Index: [4, 0]
+  Size: [1, 5]
+
+Number of pixels : 5
+ImageRegion (0x18ad8f0)
+  Dimension: 2
+  Index: [0, 0]
+  Size: [5, 1]
+
+Number of pixels : 5
+ImageRegion (0x18ad930)
+  Dimension: 2
+  Index: [0, 4]
+  Size: [5, 1]
+
+There are 4 regions have been incorporated to boundary regions twice.The updated version takes into account the issue and produce non duplicate regions.
+
+Number of pixels :9
+ImageRegion (0xb8b830)
+  Dimension: 2
+  Index: [1, 1]
+  Size: [3, 3]
+
+Number of pixels :5
+ImageRegion (0xb8b870)
+  Dimension: 2
+  Index: [0, 0]
+  Size: [1, 5]
+
+Number of pixels :5
+ImageRegion (0xb8b8b0)
+  Dimension: 2
+  Index: [4, 0]
+  Size: [1, 5]
+
+Number of pixels :3
+ImageRegion (0xb8b8f0)
+  Dimension: 2
+  Index: [1, 0]
+  Size: [3, 1]
+
+Number of pixels :3
+ImageRegion (0xb8b930)
+  Dimension: 2
+  Index: [1, 4]
+  Size: [3, 1]
+ 
+To keep backward compatibility, the default behavior of ImageBoundaryFacesCalculator has been set the same as previous version.
+With default option (m_DuplicateOverlap == true, same as previous version), all tests(1822) passed.
+
+If the default option  m_DuplicateOverlap == false, 3 tests failed.
+
+1. 159 - itkScalarImageToCooccurrenceListSampleFilterTest (Failed)
+In itkScalarImageToCooccurrenceListSampleFilterTest
+The baseline values (baselineVectorList) in the test have duplication regions. Namely they are using the default behavior (m_DuplicateOverlap == true)
+
+2. 1811 - GeodesicActiveContourShapePriorCallosumTest (Failed)
+The errors could be traced back to ScalarAnisotropicDiffusionFunction&lt;TImage&gt;::CalculateAverageGradientMagnitudeSquared(TImage *ip)
+When duplicate regions exist, the gradient magnitudes of part of boundary regions have been counted twice or three times depends on image dimension and locations . I think it is a bug, in the case, m_DuplicateOverlap should be set false to avoid duplication.
+
+3. 1817 - WatershedSegmentation1Test1 (Failed)
+The error could be traced back to VectorAnisotropicDiffusionFunction&lt; TImage &gt;::
+CalculateAverageGradientMagnitudeSquared(TImage *ip) The same reason as 2.
+|Uploaded patch set 2.
+|Patch Set 2: Abandoned
+
+When try to upload patch2, i made a lot of mistakes. Have to abandon it.
+|Patch Set 1: Abandoned
+
+sorry, make a mistake
+|Patch Set 1: Abandoned
+
+Sorry, make a mistake
+|Patch Set 1: Abandoned
+
+should be patch2
+|Patch Set 1: Abandoned
+
+should be ImageBoundaryFacesCalculator patch2
+|Patch Set 2: Code-Review+2
+|Patch Set 4: Code-Review+1
+|Patch Set 4: Code-Review+2
+|hj
+|Patch Set 1:
+
+(1 comment)
+|Uploaded patch set 1.
+|Abandoned
+
+This commit is been squashed with other commits the new commit number is: 
+http://review.source.kitware.com/#/c/20654/
+|Uploaded patch set 1.
+|Abandoned
+
+This commit is squashed with another similar commit. The new commit is: 
+http://review.source.kitware.com/#/c/20654/
+|Uploaded patch set 1.
+|Abandoned
+
+A duplicate commit for the same changes exists.
+http://review.source.kitware.com/#/c/20653/
+|Uploaded patch set 1.
+|Uploaded patch set 1.
+|Patch set 2: Commit message was updated.
+|Patch set 3: Commit message was updated.
+|Uploaded patch set 1.
+|Patch set 2: Commit message was updated.
+|Uploaded patch set 3.
+|Uploaded patch set 4.
+|Uploaded patch set 1.
+|Uploaded patch set 2.
+|Uploaded patch set 1.
+|Uploaded patch set 2: Commit message was updated.
+|Uploaded patch set 3.
+|Uploaded patch set 1.
+|Uploaded patch set 1.
+|Sure, SafeDownCast is probably better.
+|You are right, they won't be updated.  But querying the alpha bit during a render is a performance hit.  Removing this query during render improved performace from a remote computer 5x.
+|It enables specular highlights when you're coloring geometry using textures. Without that, if you color using textures, you won't get specular highlights. Rather, they won't be the right color
+|Patch Set 1: Looks good to me, but someone else must approve
+
+
+|Uploaded patch set 2.
+|Patch Set 1: Looks good to me, but someone else must approve
+
+
+|Patch Set 1: Looks good to me, but someone else must approve
+
+
+|Patch Set 1: Looks good to me, but someone else must approve
+
+Apologies for introducing this. Thanks for the catch.
+|Patch Set 1: (3 inline comments)
+
+
+|Uploaded patch set 2.
+|Patch Set 1: Abandoned
+
+This Change doesn't belong any more to the topic 1115
+|Patch Set 1: Abandoned
+
+This was a mistake, very sorry.
+|Patch Set 1: Abandoned
+
+This was a mistake, very sorry.
+|Patch Set 1: Abandoned
+
+This was a mistake, very sorry.
+|Patch Set 1: Abandoned
+
+This was a mistake, very sorry.
+|Patch Set 1: Abandoned
+
+This was a mistake, very sorry.
+|Patch Set 1:
+
+Is the lack of a method to retrieve the ColorArrayName member of the vtkPlotPoints an oversight and should be added to the vtkPlotPoints class?
+|Patch Set 1:
+
+The analogous method in the vtkMapper is 
+char* GetArrayName() { return this-&gt;ArrayName; }
+
+Preferably the new method in the vtkPlotPoints would be named GetArrayName so that a template encapsulation code could be written against the two classes: vtkMapper and vtkPlotPoints.
+|Patch Set 1: Abandoned
+|Patch Set 1: Abandoned
+|Uploaded patch set 2.
+|Uploaded patch set 1.
+|Abandoned
+
+Was just for testing
+|Uploaded patch set 1.
+|Patch Set 1:
+
+&gt; Does running a Debug build of the test in a debugger give a hint to
+ &gt; why it is segfaulting?
+
+Debug info:
+
+(gdb) backtrace
+#0  0x000000000096242f in itk::OctreeNode::IsNodeColored (this=0x7ffff6dd2040)
+    at /home/betsy/src/ITK/Modules/Core/Common/src/itkOctreeNode.cxx:87
+#1  0x00000000009624db in itk::OctreeNode::RemoveChildren (this=0x7ffff6dd2040)
+    at /home/betsy/src/ITK/Modules/Core/Common/src/itkOctreeNode.cxx:96
+#2  0x000000000096222d in itk::OctreeNode::~OctreeNode (this=0x7ffff6dd2040, 
+    __in_chrg=&lt;optimized out&gt;)
+    at /home/betsy/src/ITK/Modules/Core/Common/src/itkOctreeNode.cxx:36
+#3  0x000000000084e38f in itk::OctreeNodeBranch::~OctreeNodeBranch (
+    this=0x7ffff6dd1f98, __in_chrg=&lt;optimized out&gt;)
+    at /home/betsy/src/ITK/Modules/Core/Common/include/itkOctreeNode.h:123
+
+
+What's happening:
+
+The ColorTable array is populated with uninitialized 'OctreeNodeBranch's. This is okay during the program execution because they're not used. The OctreeNodeBranch destructor, however, attempts some clean-up and ends up dereferencing a NULL pointer. A few checks need to be added.
+|Uploaded patch set 2.
+|Patch Set 2:
+
+request build
+|Uploaded patch set 3: Patch Set 2 was rebased.
+|Patch Set 4: Commit message was updated
+|Patch Set 4:
+
+request build: all
+|Patch Set 2: Code-Review+1
+|Patch Set 2: Code-Review+1
+|Patch Set 2: Code-Review+1
+|Patch Set 2: Code-Review+1
+|Patch Set 2: Code-Review+1

@@ -1,0 +1,1360 @@
+===Database gerrit_coreboot
+
+== Dumping data for table JOINED_TABLE
+
+|APLK FSP is reading from this register and coreboot was clearing it. Also , since OSPM clears all wake status and the slp_en and slp_typ before setting the new value, I thought it was ok to remove it from here.
+|So in that case isn't it enough to just clear SLP_EN bit?Although I think it will anyway get cleared if a reset were to happen on S3
+|We are going to address the FSP issue. It will be made to use bootmode from coreboot. However, do we still need to put back the clearing here or can we allow OSPM to take care of this ?
+|OSPM takes care of clearing the event status registers. I think this PM1_CNT clearing can also be removed since anyway the OSPM will set the new sleep state on next entry to sleep.
+|actually if you diff base and patchset3 , it should only have pmutil.c added
+|or I could change this to for example [index]=value which will still be static
+|I'll move this to the SOC specific dir
+|If it is ok to use bit definitions from within soc/intel/xxx/include/soc/pm.h dir, I can add a function - register_smi_handler() in this file which initializes southbridge_smi[]. Eg. 
+southbridge_smi[SLP_SMI_STS] = southbridge_smi_sleep - with a check added to make sure we don't go past the array limits. SLP_SMI_STS will be soc specific in pm.h
+|I can add a handler for this inside struct smm_save_state_ops (https://review.coreboot.org/#/c/14615/16/src/soc/intel/common/smi.h) but then we should probably change the name of the structure to something more generic and could possibly bring in other handlers - for functions in https://review.coreboot.org/#/c/14808/5/src/soc/intel/apollolake/smi.c ?
+|Why not provide the default here and SOCs only need to implement the function if they need to override this
+|why even do the config space IO access if we are not going to disable bus mastering for this device?
+|should I leave this also inside #if CONFIG_ELOG_GSMI  ?
+|I want to add outb(value, 0x80)  here for debugging.
+Should I define a value in include/console/post_codes.h?
+#define POST_ENTER_SLEEP_SMI 0xec ?
+|#include &lt;console/console.h&gt;  pulls in the definitions from &lt;cpu/x86/post_code.h&gt; but should we bring in post.c to SMM or add a function that does outb inside smm code ?
+|elog.c (which has elog_add_event) is conditionally compiled in.
+So should I change below  to smm-y ?
+smm-$(CONFIG_ELOG_GSMI) += elog.c gsmi.c
+
+OR should I add #if IS_ENABLED(CONFIG_ELOG_GSMI) around elog_add_event.
+Same question for gsmi_exec
+|I did this to use the following macro in https://review.coreboot.org/#/c/14808/1/src/soc/intel/apollolake/smihandler.c
+#define GET_REG(name)				\
+	case name:				\
+		value = smm_state-&gt;name
+|Do you mean pass the ops to all the southbridge_smi_xxx functions too ?
+|If I add the enum, I would have to add a switch to dereference  the corresponding field in the structure for each case? Is that ok?
+|was set_reg meant to be used to trigger a smi ? What is the usage of set_reg?
+|In include/cpu/x86/smm.h there is smm_state_save_area_t  which is a union of the diff smm save state types. So why not have a common set_reg and get_reg in soc/intel/common/smihandler and only get save_state_type_t from SOC layer
+|should smm_disable_busmaster be added as part of existing struct device_operations?
+|I will add this function to smihandler.c and it can control which bdf needs to be disabled
+|I'll add a flag in the ops structure so this can be excluded for platforms where this need not be done
+|In that case, I will also have to remove this guard
+#if CONFIG_ELOG_GSMI
+extern u32 gsmi_exec(u8 command, u32 *param);
+#endif
+|It is here: include/cpu/x86/smm.h
+|I think I will change the frequency returned from this function to return a KHz value instead of Mhz for more granularity.
+|Why do we not want to use the existing definition in include/cpu/x86/msr.h ?
+|If I make sure I don't have any rdmsr or wrmsr in common code (ones outside of weak function) then for these other SOCs you can override the weak functions isn't it ?
+|Can I move this block into soc/intel/common/acpi/platform.asl  and then include it from here
+|This GPE_CFG config value decides whether GPIO_22 Lid open for example is routed to GPE0b or GPE0d. The PM registers we print from early romstage  show the routing as per the default value of GPE_CFG as also the snapshot of the PM registers we save in CAR. So soc_fill_acpi_wake should have logic to convert a GPE0d bit position to  GPE0b to track _PRW. How do we plan to handle this ?
+|yes I'll do this
+|We need to fill this field in acpi_fill_fadt
+fadt-&gt;smi_cmd 
+Only through APM SMI, SCI_EN will be enabled
+(APM_CNT_ACPI_ENABLE)
+|Can we move most of above functions to src/soc/intel/common with weak functions for soc specific functions. Then for the next similar SOC, we only have to provide include/soc/i2c.h and a smaller subset of SOC specific functions.
+|change this to &quot;On waking from S3, PMC is writing default values in GPE_CFG which results in wrong wake status in _SWS.&quot;
+|oops - I realized I re-explained what was in the commit message. Agreed the comment here needs to be fixed
+|It is the GPIO to GPE0x mapping (in GPIO_GPE_CFG ) that gets changed (actually reset to default on S3 resume). So although the bit defined in _PRW caused the wake, the GPE0 status will now not match _PRW. We need to use the information in devicetree.cb to re-order GPE0. For example, GPE0d will have the status bit corresponding to the GPIO line instead of GPE0b
+|Patch Set 1: Code-Review+2
+|Uploaded patch set 1.
+|Topic set to Apollolake-S3
+|Uploaded patch set 5.
+|Uploaded patch set 1.
+|Topic set to Apollolake-S3
+|Uploaded patch set 4.
+|Patch Set 5: Commit message was updated.
+|Uploaded patch set 1.
+|Topic set to Apollolake-S3
+|Uploaded patch set 2.
+|Uploaded patch set 3.
+|Patch Set 3:
+
+(1 comment)
+|Uploaded patch set 4.
+|Uploaded patch set 5.
+|Uploaded patch set 6.
+|Uploaded patch set 7.
+|Patch Set 7:
+
+(1 comment)
+|Uploaded patch set 8.
+|Uploaded patch set 9.
+|Patch Set 9:
+
+(1 comment)
+|Patch Set 9:
+
+(1 comment)
+|Patch Set 9:
+
+(1 comment)
+|Uploaded patch set 10.
+|Uploaded patch set 11.
+|Uploaded patch set 12.
+|Uploaded patch set 1.
+|Topic set to Apollolake-S3
+|Uploaded patch set 2: Patch Set 1 was rebased.
+|Uploaded patch set 3.
+|Patch Set 4: Patch Set 3 was rebased
+|Uploaded patch set 5.
+|Uploaded patch set 6.
+|Patch Set 7: Patch Set 6 was rebased
+|Uploaded patch set 8.
+|Patch Set 9: Patch Set 8 was rebased
+|Uploaded patch set 10.
+|Patch Set 10:
+
+(1 comment)
+|Patch Set 10:
+
+(1 comment)
+
+&gt; (1 comment)
+ &gt; 
+ &gt; I think we need to think about what the SMI API surface area should
+ &gt; be. I'm not convinced copying an SoC-specific implementation should
+ &gt; be the basis for a common piece of infrastructure.
+ &gt; 
+ &gt; Do we have an idea about what we want to make common vs deferring
+ &gt; to the chipset? Starting with that surface area should at least
+ &gt; provide common logic paths for a few things.
+This file is the implementation of APIs in  src/cpu/x86/smm/smihandler.c. However, since there are a set of SOCs which implement them in a similar way, why not make them common - as you said earlier this may not apply to all Intel SOCs but definitely to a subset. I can abstract any register accesses directly done here into a API that should be implemented by specific SOC.
+|Patch Set 10:
+
+(1 comment)
+|Uploaded patch set 11.
+|Uploaded patch set 12.
+|Abandoned
+
+This will be replaced with a more generic common code
+|Uploaded patch set 1.
+|Uploaded patch set 2.
+|Patch Set 3: Patch Set 2 was rebased
+|Topic set to Apollolake-S3
+|Uploaded patch set 4.
+|Uploaded patch set 5.
+|Uploaded patch set 6.
+|Abandoned
+
+This will be changed in another commit to only live inside soc/intel/apollolake and after the common implementation is done, this will be changed to use common code
+|Uploaded patch set 1.
+|Topic set to Apollolake-S3
+|Uploaded patch set 2.
+|Uploaded patch set 3.
+|Uploaded patch set 4.
+|Uploaded patch set 5.
+|Uploaded patch set 1.
+|Topic set to Apollolake-S3
+|Uploaded patch set 2.
+|Patch Set 2:
+
+&gt; Same comments as patch set 1.
+Will abandon this patch and modify existing soc/intel/apollolake/romstage.c
+|Abandoned
+
+Will modify existing soc/intel/apollolake/romstage.c instead
+|Uploaded patch set 1.
+|Uploaded patch set 2.
+|Abandoned
+
+Will be replaced with more generic common code
+|Uploaded patch set 1.
+|Uploaded patch set 2.
+|Abandoned
+|Patch Set 2:
+
+Can I amend this patch with the remaining code?
+|Patch Set 2: Code-Review+1
+|Uploaded patch set 1.
+|Uploaded patch set 2.
+|Patch Set 2:
+
+(1 comment)
+|Patch Set 2:
+
+(1 comment)
+|Uploaded patch set 3.
+|Patch Set 4:
+
+(1 comment)
+|Uploaded patch set 5.
+|Uploaded patch set 6.
+|Patch Set 6:
+
+(2 comments)
+|Patch Set 6:
+
+(1 comment)
+|Uploaded patch set 7.
+|Patch Set 6:
+
+(1 comment)
+|Patch Set 7:
+
+(1 comment)
+|Patch Set 7:
+
+(1 comment)
+|Patch Set 6:
+
+(1 comment)
+|Uploaded patch set 8.
+|Patch Set 8:
+
+(1 comment)
+|Patch Set 8:
+
+(1 comment)
+|Patch Set 8:
+
+(1 comment)
+|Uploaded patch set 9.
+|Uploaded patch set 10.
+|Patch Set 8:
+
+(1 comment)
+|Patch Set 11: Commit message was updated.
+|Uploaded patch set 12.
+|Uploaded patch set 13.
+|Uploaded patch set 14.
+|Uploaded patch set 15: Patch Set 14 was rebased.
+|Uploaded patch set 16.
+|Patch Set 16:
+
+(2 comments)
+|Patch Set 16:
+
+(1 comment)
+|Uploaded patch set 1.
+|Uploaded patch set 2.
+|Patch Set 3: Patch Set 2 was rebased
+|Uploaded patch set 4.
+|Uploaded patch set 5.
+|Uploaded patch set 1.
+|Patch Set 2: Patch Set 1 was rebased
+|Uploaded patch set 3.
+|Uploaded patch set 4.
+|Uploaded patch set 5.
+|Patch Set 6:
+
+&gt; Hannah, can you please fix these comments up in another patch?
+
+Yes will do
+|Uploaded patch set 1.
+|Patch Set 2: Commit message was updated.
+|Uploaded patch set 1.
+|Patch Set 2: Commit message was updated.
+|Patch Set 3: Commit message was updated.
+|Patch Set 1:
+
+do the mainboard ones in a separate commit from SOC specific changes
+|Uploaded patch set 1.
+|Uploaded patch set 2.
+|Uploaded patch set 1.
+|Uploaded patch set 1.
+|Uploaded patch set 2.
+|Uploaded patch set 3.
+|Uploaded patch set 4.
+|Uploaded patch set 5.
+|Uploaded patch set 1.
+|Patch Set 2: Patch Set 1 was rebased
+|Uploaded patch set 3.
+|Uploaded patch set 4.
+|Patch Set 5: Patch Set 4 was rebased
+|Patch Set 6: Commit message was updated.
+|Patch Set 5:
+
+(1 comment)
+|Uploaded patch set 7.
+|Uploaded patch set 8.
+|Patch Set 8:
+
+(1 comment)
+|Uploaded patch set 9: Patch Set 8 was rebased.
+|Patch Set 9:
+
+&gt; Were you going to address the comments?
+The only thing I haven't yet addressed is Lee's comments &quot;replace all references to rdmsr with soc_rdmsr&quot; 
+Will do this
+|Patch Set 9:
+
+&gt; &gt; &gt; Were you going to address the comments?
+ &gt; &gt; The only thing I haven't yet addressed is Lee's comments &quot;replace
+ &gt; &gt; all references to rdmsr with soc_rdmsr&quot;
+ &gt; &gt; Will do this
+ &gt; 
+ &gt; I see nothing addressing my comments in patchset 8.
+
+Yes I see that whatever I thought I pushed are not there - working on it
+|Uploaded patch set 10.
+|Patch Set 5:
+
+(1 comment)
+|Uploaded patch set 11.
+|Uploaded patch set 1.
+|Patch Set 2: Patch Set 1 was rebased
+|Uploaded patch set 3.
+|Patch Set 4: Patch Set 3 was rebased
+|Patch Set 5: Patch Set 4 was rebased
+|Uploaded patch set 6.
+|Patch Set 7: Patch Set 6 was rebased
+|Uploaded patch set 8.
+|Uploaded patch set 9.
+|Uploaded patch set 1.
+|Patch Set 2: Patch Set 1 was rebased
+|Abandoned
+|Restored
+|Patch Set 3: Patch Set 2 was rebased
+|Uploaded patch set 4.
+|Abandoned
+|Uploaded patch set 1.
+|Uploaded patch set 2.
+|Patch Set 3: Patch Set 2 was rebased
+|Uploaded patch set 4.
+|Uploaded patch set 1.
+|Patch Set 2: Commit message was updated.
+|Uploaded patch set 3.
+|Uploaded patch set 4.
+|Uploaded patch set 5.
+|Patch Set 7: Commit message was updated.
+|Uploaded patch set 1.
+|Patch Set 2: Commit message was updated.
+|Patch Set 3: Patch Set 2 was rebased
+|Uploaded patch set 4.
+|Uploaded patch set 5.
+|Uploaded patch set 1.
+|Uploaded patch set 1.
+|Patch Set 1:
+
+(1 comment)
+|Uploaded patch set 2.
+|Uploaded patch set 3.
+|Uploaded patch set 4: Patch Set 3 was rebased.
+|Uploaded patch set 5.
+|Uploaded patch set 1.
+|Uploaded patch set 2.
+|Uploaded patch set 3.
+|Uploaded patch set 4.
+|Patch Set 3:
+
+(1 comment)
+|Patch Set 3:
+
+(1 comment)
+|Patch Set 5:
+
+(1 comment)
+|Uploaded patch set 1.
+|Uploaded patch set 1.
+|Uploaded patch set 4: Patch Set 3 was rebased.
+|Patch Set 1:
+
+(1 comment)
+|Patch Set 4:
+
+(1 comment)
+|Patch Set 4:
+
+(1 comment)
+|Patch Set 4:
+
+(1 comment)
+|Uploaded patch set 1.
+|Patch Set 2: Patch Set 1 was rebased
+|Abandoned
+
+Moved it to 17810
+|Uploaded patch set 1.
+|Abandoned
+
+moved to 17814
+|Uploaded patch set 1.
+|Patch Set 2: Patch Set 1 was rebased
+|Abandoned
+|Uploaded patch set 1.
+|Abandoned
+
+moved to 17815
+|Sure Paul. Will make sure this from future patches.
+|pmc.h is already included in pm.h which is also included here.
+
+https://chromium.googlesource.com/chromiumos/third_party/coreboot/+/release-R47-7520.B/src/soc/intel/skylake/include/soc/pm.h
+
+So, thats how the dependencies getting resolved.
+|Similarly in this file also, pm.h is included, which in turn includes pmc.h.
+
+Thus, we dont get any build errors.
+|Done
+|Done
+|We are just following hardware default routing at this point.
+
+We have used the same PxRC -&gt; PIRQ programming during post console stage as below -
+https://chromium.googlesource.com/chromiumos/third_party/coreboot/+/stabilize-7199.B/src/soc/intel/skylake/romstage/pch.c
+
+FSP also programs the same values.
+
+Later in ramstage, we have a hook in devicetree as platform policy, such that PIRQ routing could be adjusted by platform if necessary.
+|Done
+|Yes, if we do not set this in devicetree, but we keep the PxRC-&gt;PIRQ programming in lpc.c after FSP-S is called, these values get overridden to &quot;0&quot;.
+
+Below is the snapshot of the logs if we do not set the values in devicetree - 
+pirq A after FSP PARC-&gt;PIRQ programming = 0xb
+pirq B after FSP PBRC-&gt;PIRQ programming = 0xa
+pirq C after FSP PCRC-&gt;PIRQ programming = 0xb
+pirq D after FSP PDRC-&gt;PIRQ programming = 0xb
+pirq E after FSP PERC-&gt;PIRQ programming = 0xb
+pirq F after FSP PFRC-&gt;PIRQ programming = 0xb
+pirq G after FSP PGRC-&gt;PIRQ programming = 0xb
+pirq H after FSP PHRC-&gt;PIRQ programming = 0xb
+
+pirq A after Coreboot PARC-&gt;PIRQ programming = 0x0
+pirq B after Coreboot PBRC-&gt;PIRQ programming = 0x0
+pirq C after Coreboot PCRC-&gt;PIRQ programming = 0x0
+pirq D after Coreboot PDRC-&gt;PIRQ programming = 0x0
+pirq E after Coreboot PERC-&gt;PIRQ programming = 0x0
+pirq F after Coreboot PFRC-&gt;PIRQ programming = 0x0
+pirq G after Coreboot PGRC-&gt;PIRQ programming = 0x0
+pirq H after Coreboot PHRC-&gt;PIRQ programming = 0x0
+|Now, after Coreboot does PxRC-&gt;PIRQ programming, we get the same values of PIRQs as after FSP does the programming.
+|Done
+|Done
+|This was a mistake in the code. Luckily, nothing sits on I2C5, so there was nothing which was broken for this.
+But, this is a genuine coding mistake.
+|Done
+|Done
+|Done
+|Done
+|yes, i meant throughout.
+sorry, my bad.
+|Done
+|Done
+|Ok, will modify the code likewise and push a patch.
+|Done
+|Done
+|Done
+|Done
+|my mistake, it would be &quot;rvp7&quot;
+|Yes, there are differences in the following -
+1) SataPort Enabling
+2) VrConfig Settings
+3) Pcie RootPort Enabling
+4) USB OC pin Programming
+|Yes, as per RVP7 schematics, there are changes in gpio table. I have gone through the schematics while writing this code.
+|Done
+|Yes, we have already initiated the thread to address this problem. We shall revert back on this with FSP code level changes.
+I will raise a Crossbug to track this as well.
+|Uploaded patch set 1.
+|Patch Set 1:
+
+(1 comment)
+
+&gt; Patch Set 1: Code-Review+2
+
+Hi Aaron, I think that we should do some more code cleanup for SoC ASL codes. Should I go forward and change in this patch? Or should I make a separate patch for that?
+
+FYI, we want to push another patch for mainboard code clean up which will be majorly focusing on wrong PxRC -&gt; PIRQ programming override.
+|Patch Set 1:
+
+(2 comments)
+|Uploaded patch set 1.
+|Patch Set 1:
+
+(4 comments)
+|Patch Set 2: Commit message was updated.
+|Patch Set 3: Commit message was updated.
+|Patch Set 4: Commit message was updated.
+|Uploaded patch set 5: Commit message was updated.
+|Uploaded patch set 6.
+|Patch Set 5:
+
+(2 comments)
+|Patch Set 6:
+
+&gt; Could we set defaults in chip.c
+In chip.c, the default values of IRQs are already set as UPD-S for FSP Silicon Init.
+https://chromium.googlesource.com/chromiumos/third_party/coreboot/+/release-R53-8530.B/src/soc/intel/skylake/chip.c
+
+ &gt; and only worry about devicetree.cb in a board if it is overridden (non-zero)?
+This is done in lpc.c using the devicetree configs. So, if nothing is set in devicetree.cb, then here in lpc.c, the default values of IRQs (which were preprogrammed during FSP-S) will be overridden back to &quot;0&quot; wrongly.
+So, the devicetree assignments are necessary.
+|Patch Set 6:
+
+&gt; &gt; Could we set defaults in chip.c
+
+ &gt; In chip.c, the default values of IRQs are already set as UPD for
+ &gt; FSP Silicon Init in function soc_silicon_init_params().
+ &gt; https://chromium.googlesource.com/chromiumos/third_party/coreboot/+/release-R53-8530.B/src/soc/intel/skylake/chip.c
+ &gt; 
+ &gt; &gt; and only worry about devicetree.cb in a board if it is overridden
+ &gt; (non-zero)?
+
+ &gt; This is done in lpc.c using the devicetree configs. So, if nothing
+ &gt; is set in devicetree.cb, then here in lpc.c, the default values of
+ &gt; IRQs (which were preprogrammed during FSP-S) will be overridden
+ &gt; back to &quot;0&quot; wrongly.
+ &gt; So, the devicetree assignments are necessary.
+|Uploaded patch set 1.
+|Uploaded patch set 2.
+|Patch Set 1:
+
+(3 comments)
+|Uploaded patch set 1.
+|Patch Set 1:
+
+(5 comments)
+|Uploaded patch set 2: Commit message was updated.
+|Uploaded patch set 1.
+|Patch Set 2: Commit message was updated.
+|Uploaded patch set 1.
+|Patch Set 2: Commit message was updated.
+|Patch Set 1:
+
+(1 comment)
+|Uploaded patch set 2: Patch Set 1 was rebased.
+|Patch Set 2: Commit message was updated.
+|Patch Set 2:
+
+(1 comment)
+|Patch Set 3: Commit message was updated.
+|Uploaded patch set 6: Patch Set 5 was rebased.
+|Uploaded patch set 13: Patch Set 12 was rebased.
+|Uploaded patch set 7: Patch Set 6 was rebased.
+|Uploaded patch set 14: Patch Set 13 was rebased.
+|Uploaded patch set 3.
+|Uploaded patch set 4: Patch Set 3 was rebased.
+|Uploaded patch set 5.
+|Uploaded patch set 6.
+|Abandoned
+
+Abandoning this patch since I will push another patch with variant board model like reef/beltino.
+|Uploaded patch set 3.
+|Patch Set 3:
+
+(2 comments)
+|Uploaded patch set 4.
+|Abandoned
+|Restored
+|Uploaded patch set 5.
+|Patch Set 5:
+
+(1 comment)
+|Abandoned
+
+Abandoning this patch since I will push another patch with variant board model like reef/beltino.
+|Uploaded patch set 5: Patch Set 4 was rebased.
+|Uploaded patch set 3: Commit message was updated.
+|Patch Set 3:
+
+&gt; Needs manual rebase for src/Kconfig and spd/spd.h before this can
+ &gt; be merged.
+
+Yes Martin. Will do so.
+|Uploaded patch set 4: Patch Set 3 was rebased.
+|Uploaded patch set 1.
+|Patch Set 1:
+
+(4 comments)
+|Patch Set 2: Commit message was updated.
+|Uploaded patch set 3: Patch Set 2 was rebased.
+|Uploaded patch set 1.
+|Patch Set 2: Published edit on patch set 1.
+|Patch Set 1:
+
+(1 comment)
+|Patch Set 1:
+
+(2 comments)
+|Uploaded patch set 3.
+|Uploaded patch set 1.
+|Uploaded patch set 2.
+|Patch Set 2:
+
+(1 comment)
+|Patch Set 3: Commit message was updated.
+|Patch Set 2:
+
+(1 comment)
+|These changes replicate the changes that were made for family14, which is also consistent with the spd changes that were made for family15tn.  However, I see no issue with using a more generic name.
+|Uploaded patch set 2.
+|Patch Set 2:
+
+The PWRB device was moved into southbridge/amd/agesa/hudson/acpi/fch.asl as part of the original Parmer patch.  This placed the PWRB inside the _SB.PCI0 scope when it used to be in _SB.  The same scope change happened with the Parmer patch, the PWRB moved from _SB to _SB.PCI0.
+|Uploaded patch set 4.
+|Patch Set 4:
+
+Mike: The include for ide.asl and sata.asl were commented out in the original f2a85-m dsdt.asl, so I removed the contents of ide.asl and sata.asl to match up with parmer.
+
+I'm not sure about your other comment - SBR0 and SBR1 were left in dsdt.asl because I wasn't sure what to do with them, but they were/are under Device(PCI0), not Device(ACMD).
+|Uploaded patch set 5.
+|Patch Set 5:
+
+acpi/usb.asl was commented out from dsdt.asl anyway, so it is now removed
+|Change has been successfully cherry-picked as 0cc33da5530cf2ef776fc9fa2dbb80bb4dc4c830
+|Patch Set 1:
+
+See http://review.coreboot.org/#/c/3807/ for the file permission fix on Parmer.
+
+I checked file permissions on amd/parmer/acpi and asus/f2a85-m/acpi and they are correct.
+|Patch Set 1:
+
+Last comment should have stated that I checked amd/thatcher/acpi file permissions and they are correct.
+|Uploaded patch set 3.
+|Uploaded patch set 4.
+|Patch Set 4:
+
+acpi/usb.asl was commented out from dsdt.asl anyway, so it is now removed
+|Change has been successfully cherry-picked as 436a3753ec14f8bde3eb3063b6563e32c1dd72e7
+|Uploaded patch set 2.
+|Uploaded patch set 2.
+|Patch Set 1: (1 inline comment)
+
+
+|Uploaded patch set 2.
+|Uploaded patch set 3.
+|Patch Set 1: Looks good to me, but someone else must approve
+
+
+|Patch Set 1: Looks good to me, but someone else must approve
+
+
+|Uploaded patch set 2.
+|Uploaded patch set 3.
+|Uploaded patch set 2.
+|Uploaded patch set 3.
+|Uploaded patch set 4.
+|Uploaded patch set 2.
+|Uploaded patch set 3.
+|Uploaded patch set 4.
+|Yes. This is making disabled by default and audio kernel driver will enable when audio rendering starts.
+|Excerpt from Dialog Codec driver:
+
+&gt;&gt;        ret = request_threaded_irq(da7219_aad-&gt;irq, NULL,
+                             da7219_aad_irq_thread,
+                             IRQF_TRIGGER_LOW &#124; IRQF_ONESHOT,
+                             &quot;da7219-aad&quot;, da7219_aad);
+
+
+Dialog codec driver is level LOW triggered interrupt. To get level LOW interrupt configuration, we needed to pass INVERT option to that PAD_CFG_GPI_APIC API.
+|In the Amenia boards we needed this to get headset working. I just verified it on Reef and this change is not needed. I will submit a next version without this pullup.
+|Done
+|Uploaded patch set 1.
+|Patch Set 2: Commit message was updated.
+|Uploaded patch set 3.
+|Patch Set 4: Commit message was updated.
+|Uploaded patch set 5.
+|Patch Set 5:
+
+(3 comments)
+|Uploaded patch set 6.
+|Patch Set 6:
+
+Hi Aaron, Do you have any further questions on this? Can we merge this patch?
+|Uploaded patch set 7.
+|Uploaded patch set 1.
+|Patch Set 1:
+
+The header is used in the changelist https://review.coreboot.org/#/c/15435 and https://review.coreboot.org/#/c/15436
+|Patch Set 2: Commit message was updated.
+|Uploaded patch set 3.
+|Patch Set 1:
+
+&gt; (1 comment)
+
+I am going to abandon this patch. I shall update the https://review.coreboot.org/#/c/15436 to have this change in gpio.h
+|Abandoned
+
+Adding the changes to https://review.coreboot.org/#/c/15436
+|Uploaded patch set 1.
+|Patch Set 1:
+
+This is tested with the recipe given in https://code.google.com/p/chrome-os-partner/issues/detail?id=53967. The google doc (https://docs.google.com/a/intel.com/spreadsheets/d/1b41AB7JCbPXY70JawDA2FDzrgaGIAhvVjc1vWpeHl8Y/edit?usp=sharing) has the details.
+|Patch Set 1:
+
+Thanks Duncan. I looked at your sample usage in the commit message. Question - How do I change the usage if I have to get &quot;\\_SB.GPO1&quot; as in the following code in SSDT 
+
+&gt;&gt;GpioIo (Exclusive, PullDefault, 0x0000, 0x0000,		IoRestrictionOutputOnly, &quot;\\_SB.GPO1&quot;, 0x00, ResourceConsumer,,)
+
+&gt;&gt;
+|Patch Set 1:
+
+Hi Duncan,
+I tried to remove the changes in mainboard.asl and added the following. I dont see the enable_dev() of max98357a.c being called. I also dont see any entry for the speaker in SSDT. Can you help understand if I am missing something? Post validation, I shall update the patch to use the driver/generic/max98357a.c
+
+diff --git a/src/mainboard/google/reef/devicetree.cb b/src/mainboard/google/reef/devicetree.cb
+index 9bb28b3..489deba 100644
+--- a/src/mainboard/google/reef/devicetree.cb
++++ b/src/mainboard/google/reef/devicetree.cb
+@@ -42,7 +42,13 @@ chip soc/intel/apollolake
+                device pci 0d.1 on  end # - PMC
+                device pci 0d.2 on  end # - SPI
+                device pci 0d.3 on  end # - Shared SRAM
+-               device pci 0e.0 on  end # - Audio
++               device pci 0e.0 on
++                        chip drivers/generic/max98357a
++                                register &quot;sdmode_gpio&quot; =  &quot;ACPI_GPIO_OUTPUT(GPIO_76)&quot;
++                                device generic 0 on end
++                        end
++                end
+                device pci 11.0 on  end # - ISH
+                device pci 12.0 off end # - SATA
+                device pci 13.0 off end # - Root Port 2 - PCIe-A 0
+diff --git a/src/soc/intel/apollolake/Kconfig b/src/soc/intel/apollolake/Kconfig
+index 6cc0a43..d3e2175 100644
+--- a/src/soc/intel/apollolake/Kconfig
++++ b/src/soc/intel/apollolake/Kconfig
+@@ -19,6 +19,7 @@ config CPU_SPECIFIC_OPTIONS
+        select SUPPORT_CPU_UCODE_IN_CBFS
+        # Audio options
+        select ACPI_NHLT
++       select DRIVERS_GENERIC_MAX98357A
+        select USE_COMMON_NHLT
+        # Misc options
+|Patch Set 1:
+
+&gt; &gt; Hi Duncan,
+ &gt; &gt; I tried to remove the changes in mainboard.asl and added the
+ &gt; &gt; following. I dont see the enable_dev() of max98357a.c being
+ &gt; called.
+ &gt; &gt; I also dont see any entry for the speaker in SSDT. Can you help
+ &gt; &gt; understand if I am missing something? Post validation, I shall
+ &gt; &gt; update the patch to use the driver/generic/max98357a.c
+ &gt; &gt;
+ &gt; &gt; diff --git a/src/mainboard/google/reef/devicetree.cb
+ &gt; &gt; b/src/mainboard/google/reef/devicetree.cb
+ &gt; &gt; index 9bb28b3..489deba 100644
+ &gt; &gt; --- a/src/mainboard/google/reef/devicetree.cb
+ &gt; &gt; +++ b/src/mainboard/google/reef/devicetree.cb
+ &gt; &gt; @@ -42,7 +42,13 @@ chip soc/intel/apollolake
+ &gt; &gt; device pci 0d.1 on  end # - PMC
+ &gt; &gt; device pci 0d.2 on  end # - SPI
+ &gt; &gt; device pci 0d.3 on  end # - Shared SRAM
+ &gt; &gt; -               device pci 0e.0 on  end # - Audio
+ &gt; &gt; +               device pci 0e.0 on
+ &gt; 
+ &gt; 
+ &gt; This patch looks right, but I forgot that you will also need to add
+ &gt; the audio pci device to apollolake and have it set &quot;.scan_bus =
+ &gt; scan_static_bus&quot; in the device operations so it will scan for
+ &gt; generic (I2S) devices behind it.
+ &gt; 
+ &gt; This is what I did for skylake: https://review.coreboot.org/14993
+
+Thank you Duncan. With this change I am getting the SSDT entry as follows but its different from the DSDT i had added in .asl file. Maxim driver load is failing when its trying to get the gpio resource. Is there anything else I am missing to change/add?
+
+1. Its missing the &quot;\\_SB.GPO1&quot; in _CRS entry
+2. The named entry is &quot;maxim,sdmode-gpio&quot; and I think it needs to be &quot;sdmode-gpio&quot;. &lt;&lt;for this can I change it in the maxim98357a.c driver call acpi_dp_write_gpio(&quot;sdmode-gpio&quot;, path, 0, 0, 0); &gt;&gt;
+
+in SSDT file ---
+ Scope (*)
+    {
+        Device (MAXM)
+        {
+            Name (_HID, &quot;MX98357A&quot;)  // _HID: Hardware ID
+            Name (_UID, Zero)  // _UID: Unique ID
+            Name (_DDN, &quot;Maxim Integrated 98357A Amplifier - harsha&quot;)  // _DDN: DOS Device Name
+            Method (_STA, 0, NotSerialized)  // _STA: Status
+            {
+                Return (0x0F)
+            }
+
+            Name (_CRS, ResourceTemplate ()  // _CRS: Current Resource Settings
+            {
+                GpioIo (Exclusive, PullDefault, 0x0000, 0x0000, IoRestrictionOutputOnly,
+                    &quot;&quot;, 0x00, ResourceConsumer, ,
+                    )
+                    {   // Pin list
+                        0x0024
+                    }
+            })
+            Name (_DSD, Package (0x02)
+            {
+                Buffer (0x0010)
+                {
+                    /* 0000 */   0x14, 0xD8, 0xFF, 0xDA, 0xBA, 0x6E, 0x8C, 0x4D,
+                    /* 0008 */   0x8A, 0x91, 0xBC, 0x9B, 0xBF, 0x4A, 0xA3, 0x01
+                },
+
+                Package (0x03)
+                {
+                    Package (0x02)
+                    {
+                        &quot;maxim,sdmode-gpio&quot;,
+                        Package (0x04)
+                        {
+                            _.MAXM,
+                            Zero,
+                            Zero,
+                            Zero
+                        }
+                    },
+
+                    Package (0x02)
+                    {
+                        &quot;maxim,sdmode-delay&quot;,
+                        Zero
+                    },
+
+                    Package (0x02)
+                    {
+                        &quot;sdmode-delay&quot;,
+                        Zero
+                    }
+                }
+            })
+|Patch Set 1:
+
+&gt; &gt; &gt; &gt; Hi Duncan,
+ &gt; &gt; &gt; &gt; I tried to remove the changes in mainboard.asl and added the
+ &gt; &gt; &gt; &gt; following. I dont see the enable_dev() of max98357a.c being
+ &gt; &gt; &gt; called.
+ &gt; &gt; &gt; &gt; I also dont see any entry for the speaker in SSDT. Can you
+ &gt; help
+ &gt; &gt; &gt; &gt; understand if I am missing something? Post validation, I
+ &gt; shall
+ &gt; &gt; &gt; &gt; update the patch to use the driver/generic/max98357a.c
+ &gt; &gt; &gt; &gt;
+ &gt; &gt; &gt; &gt; diff --git a/src/mainboard/google/reef/devicetree.cb
+ &gt; &gt; &gt; &gt; b/src/mainboard/google/reef/devicetree.cb
+ &gt; &gt; &gt; &gt; index 9bb28b3..489deba 100644
+ &gt; &gt; &gt; &gt; --- a/src/mainboard/google/reef/devicetree.cb
+ &gt; &gt; &gt; &gt; +++ b/src/mainboard/google/reef/devicetree.cb
+ &gt; &gt; &gt; &gt; @@ -42,7 +42,13 @@ chip soc/intel/apollolake
+ &gt; &gt; &gt; &gt; device pci 0d.1 on  end # - PMC
+ &gt; &gt; &gt; &gt; device pci 0d.2 on  end # - SPI
+ &gt; &gt; &gt; &gt; device pci 0d.3 on  end # - Shared SRAM
+ &gt; &gt; &gt; &gt; -               device pci 0e.0 on  end # - Audio
+ &gt; &gt; &gt; &gt; +               device pci 0e.0 on
+ &gt; &gt; &gt;
+ &gt; &gt; &gt;
+ &gt; &gt; &gt; This patch looks right, but I forgot that you will also need to
+ &gt; &gt; add
+ &gt; &gt; &gt; the audio pci device to apollolake and have it set &quot;.scan_bus =
+ &gt; &gt; &gt; scan_static_bus&quot; in the device operations so it will scan for
+ &gt; &gt; &gt; generic (I2S) devices behind it.
+ &gt; &gt; &gt;
+ &gt; &gt; &gt; This is what I did for skylake: https://review.coreboot.org/14993
+ &gt; &gt;
+ &gt; &gt; Thank you Duncan. With this change I am getting the SSDT entry as
+ &gt; &gt; follows but its different from the DSDT i had added in .asl file.
+ &gt; &gt; Maxim driver load is failing when its trying to get the gpio
+ &gt; &gt; resource. Is there anything else I am missing to change/add?
+ &gt; &gt;
+ &gt; &gt; 1. Its missing the &quot;\\_SB.GPO1&quot; in _CRS entry
+ &gt; 
+ &gt; Sorry, I had not done a gpio yet on apollolake so you're hitting a
+ &gt; few of the early issues..
+ &gt; 
+ &gt; soc/intel/apollolake/Kconfig needs to select GENERIC_GPIO_LIB,
+ &gt; which I think it can do based on what I see in gpio.c but I have
+ &gt; not tested.
+The entry comes up but it comes wrongly. Its &quot;\\_SB.GPO0&quot; whereas the expected value is &quot;\\_SB.GPO1&quot;.
+
+ &gt; 
+ &gt; 
+ &gt; &gt; 2. The named entry is &quot;maxim,sdmode-gpio&quot; and I think it needs to
+ &gt; &gt; be &quot;sdmode-gpio&quot;. &lt;&lt;for this can I change it in the maxim98357a.c
+ &gt; &gt; driver call acpi_dp_write_gpio(&quot;sdmode-gpio&quot;, path, 0, 0, 0); &gt;&gt;
+ &gt; &gt;
+ &gt; 
+ &gt; It looks like this driver isn't using the &quot;of&quot; style for property
+ &gt; names, so we can just fix it in coreboot.
+ &gt; 
+ &gt; 
+ &gt; &gt; in SSDT file ---
+ &gt; &gt; Scope (*)
+ &gt; 
+ &gt; It looks like you will also need one of the patches in my current
+ &gt; stack to fill out the scope properly.  This needs to be rebased on
+ &gt; top of another pending patch but it should land before too long:
+ &gt; https://review.coreboot.org/#/c/15479/1
+I applied this patch but the scope is still (*)
+|Patch Set 1:
+
+&gt; &gt; But in the end this all works properly for me: when I use GPIO_76
+ &gt; &gt; in the devicetree the GPIO scope is \\_SB.GPO1.
+ &gt; &gt;
+ &gt; &gt; What isn't going to work is the relative numbering within the
+ &gt; &gt; community, I need to work out how to do that properly.
+ &gt; 
+ &gt; 
+ &gt; Ok I have a straightforward patch that will look to the SOC for an
+ &gt; &quot;ACPI pin&quot; translation function and now using GPIO_76 global pin
+ &gt; will translate to NW community SB.GPO1 pin 36.
+ &gt; 
+ &gt; devicetree.cb:
+ &gt; chip drivers/generic/max98357a
+ &gt; register &quot;sdmode_gpio&quot; = &quot;ACPI_GPIO_OUTPUT(GPIO_76)&quot;
+ &gt; device generic 0 on end
+ &gt; end
+ &gt; 
+ &gt; SSDT.dsl:
+ &gt; GpioIo (Exclusive, PullDefault, 0x0000, 0x0000, IoRestrictionOutputOnly,
+ &gt; &quot;\\_SB.GPO1&quot;, 0x00, ResourceConsumer, ,)
+ &gt; {   // Pin list
+ &gt; 0x0024
+ &gt; }
+
+Can you please share the patch? I can apply it, test it before updating this CL to use the driver.
+|Patch Set 1:
+
+&gt; &gt;
+ &gt; &gt; Working on it, I need to rebase everything now that andrey's
+ &gt; patch
+ &gt; &gt; is in.
+ &gt; 
+ &gt; I ran into a lot of issues rebasing as it triggered some FSP rebase
+ &gt; and some device disable problems.
+ &gt; 
+ &gt; The full updated patchset is here https://review.coreboot.org/#/c/15479/2
+
+I cherrypicked the following of your patches and got the speaker working.  I will update this changelist.
+https://review.coreboot.org/#/c/15512/3
+https://review.coreboot.org/#/c/15513/3
+|Uploaded patch set 2.
+|Uploaded patch set 3.
+|Uploaded patch set 4.
+|Patch Set 3:
+
+(1 comment)
+|Uploaded patch set 1.
+|Patch Set 2: Commit message was updated.
+|Uploaded patch set 3.
+|Uploaded patch set 4.
+|Uploaded patch set 5.
+|Uploaded patch set 1.
+|Uploaded patch set 2.
+|Patch Set 9:
+
+Hi Duncan,
+
+With these changes, the DA7219 codec probe fails with following errors.
+
+[   45.018906] da7219 i2c-DLGS7219:00: Invalid VDDIO voltage
+[   45.055760] genirq: Flags mismatch irq 0. 00002008 (da7219-aad) vs. 00015a00 (timer)
+[   45.055878] da7219 i2c-DLGS7219:00: Failed to request IRQ: -16
+|Patch Set 9:
+
+&gt; &gt; Hi Duncan,
+ &gt; &gt;
+ &gt; &gt; With these changes, the DA7219 codec probe fails with following
+ &gt; &gt; errors.
+ &gt; &gt;
+ &gt; &gt; [   45.018906] da7219 i2c-DLGS7219:00: Invalid VDDIO voltage
+ &gt; &gt; [   45.055760] genirq: Flags mismatch irq 0. 00002008
+ &gt; (da7219-aad)
+ &gt; &gt; vs. 00015a00 (timer)
+ &gt; &gt; [   45.055878] da7219 i2c-DLGS7219:00: Failed to request IRQ: -16
+ &gt; 
+ &gt; What kernel patches are you running with? Those IRQ failures are
+ &gt; from misparsing the IRQ as IRQ0. However, I dumped reef's ssdt and
+ &gt; things look fine.
+
+There is a small difference in the ssdt with mainboard.asl changes Vs this change. 
+
+With this changelist we have the following in SSDT
+  Package (0x02)
+  {
+       &quot;da7219_aad&quot;,
+        DAAD
+  }
+ Name (DAAD, Package (0x02)
+            {...}
+
+And with mainboard.asl change, we have the following
+
+  Package (0x02)
+  {
+       &quot;da7219_aad&quot;,
+        &quot;DAAD&quot;
+  }
+ Name (DAAD, Package (0x02)
+            {...}
+
+___________
+Fixing the quotes manually seems to get past this issue. I am trying to add the right change in the driver/acpi_device files.
+|Patch Set 9:
+
+&gt; &gt; &gt; &gt; &gt; &gt; Hi Duncan,
+ &gt; &gt; &gt; &gt; &gt; &gt;
+ &gt; &gt; &gt; &gt; &gt; &gt; With these changes, the DA7219 codec probe fails with
+ &gt; &gt; &gt; following
+ &gt; &gt; &gt; &gt; &gt; &gt; errors.
+ &gt; &gt; &gt; &gt; &gt; &gt;
+ &gt; &gt; &gt; &gt; &gt; &gt; [   45.018906] da7219 i2c-DLGS7219:00: Invalid VDDIO
+ &gt; &gt; voltage
+ &gt; &gt; &gt; &gt; &gt; &gt; [   45.055760] genirq: Flags mismatch irq 0. 00002008
+ &gt; &gt; &gt; &gt; &gt; (da7219-aad)
+ &gt; &gt; &gt; &gt; &gt; &gt; vs. 00015a00 (timer)
+ &gt; &gt; &gt; &gt; &gt; &gt; [   45.055878] da7219 i2c-DLGS7219:00: Failed to request
+ &gt; &gt; IRQ:
+ &gt; &gt; &gt; &gt; -16
+ &gt; &gt; &gt; &gt; &gt;
+ &gt; &gt; &gt; &gt; &gt; What kernel patches are you running with? Those IRQ
+ &gt; failures
+ &gt; &gt; &gt; are
+ &gt; &gt; &gt; &gt; &gt; from misparsing the IRQ as IRQ0. However, I dumped reef's
+ &gt; &gt; ssdt
+ &gt; &gt; &gt; &gt; and
+ &gt; &gt; &gt; &gt; &gt; things look fine.
+ &gt; &gt; &gt; &gt;
+ &gt; &gt; &gt; &gt; There is a small difference in the ssdt with mainboard.asl
+ &gt; &gt; &gt; changes
+ &gt; &gt; &gt; &gt; Vs this change.
+ &gt; &gt; &gt; &gt;
+ &gt; &gt; &gt; &gt; With this changelist we have the following in SSDT
+ &gt; &gt; &gt; &gt; Package (0x02)
+ &gt; &gt; &gt; &gt; {
+ &gt; &gt; &gt; &gt; &quot;da7219_aad&quot;,
+ &gt; &gt; &gt; &gt; DAAD
+ &gt; &gt; &gt; &gt; }
+ &gt; &gt; &gt; &gt; Name (DAAD, Package (0x02)
+ &gt; &gt; &gt; &gt; {...}
+ &gt; &gt; &gt; &gt;
+ &gt; &gt; &gt; &gt; And with mainboard.asl change, we have the following
+ &gt; &gt; &gt; &gt;
+ &gt; &gt; &gt; &gt; Package (0x02)
+ &gt; &gt; &gt; &gt; {
+ &gt; &gt; &gt; &gt; &quot;da7219_aad&quot;,
+ &gt; &gt; &gt; &gt; &quot;DAAD&quot;
+ &gt; &gt; &gt; &gt; }
+ &gt; &gt; &gt; &gt; Name (DAAD, Package (0x02)
+ &gt; &gt; &gt; &gt; {...}
+ &gt; &gt; &gt; &gt;
+ &gt; &gt; &gt; &gt; ___________
+ &gt; &gt; &gt; &gt; Fixing the quotes manually seems to get past this issue. I am
+ &gt; &gt; &gt; &gt; trying to add the right change in the driver/acpi_device
+ &gt; files.
+ &gt; &gt; &gt;
+ &gt; &gt; &gt; I actually saw that too, but I was thinking it was 'iasl -d'
+ &gt; &gt; being
+ &gt; &gt; &gt; smart about some reference. That said, I don't know how that
+ &gt; &gt; would
+ &gt; &gt; &gt; change the irq error, though.
+ &gt; &gt;
+ &gt; &gt; Does this work for you?
+ &gt; &gt;
+ &gt; &gt; diff --git a/src/arch/x86/acpi_device.c b/src/arch/x86/acpi_device.c
+ &gt; &gt; index ce31dc8..5f2734a 100644
+ &gt; &gt; --- a/src/arch/x86/acpi_device.c
+ &gt; &gt; +++ b/src/arch/x86/acpi_device.c
+ &gt; &gt; @@ -696,7 +696,11 @@ struct acpi_dp *acpi_dp_add_child(struct
+ &gt; &gt; acpi_dp *dp, const char *name,
+ &gt; &gt;
+ &gt; &gt; new = acpi_dp_new(dp, ACPI_DP_TYPE_CHILD, name);
+ &gt; &gt; if (new) {
+ &gt; &gt; +               /* Create the reference as a quoted string. */
+ &gt; &gt; +               size_t size = strlen(child-&gt;name) + 2 + 1;
+ &gt; &gt; +               char *ref = malloc(size);
+ &gt; &gt; new-&gt;child = child;
+ &gt; &gt; +               snprintf(ref, size, &quot;\&quot;%s\&quot;&quot;, child-&gt;name);
+ &gt; &gt; new-&gt;string = child-&gt;name;
+ &gt; &gt; }
+ &gt; 
+ &gt; Err. this one w/ the correct assignment:
+ &gt; 
+ &gt; diff --git a/src/arch/x86/acpi_device.c b/src/arch/x86/acpi_device.c
+ &gt; index ce31dc8..7e20d18 100644
+ &gt; --- a/src/arch/x86/acpi_device.c
+ &gt; +++ b/src/arch/x86/acpi_device.c
+ &gt; @@ -696,8 +696,12 @@ struct acpi_dp *acpi_dp_add_child(struct
+ &gt; acpi_dp *dp, const char *name,
+ &gt; 
+ &gt; new = acpi_dp_new(dp, ACPI_DP_TYPE_CHILD, name);
+ &gt; if (new) {
+ &gt; +               /* Create the reference as a quoted string. */
+ &gt; +               size_t size = strlen(child-&gt;name) + 2 + 1;
+ &gt; +               char *ref = malloc(size);
+ &gt; new-&gt;child = child;
+ &gt; -               new-&gt;string = child-&gt;name;
+ &gt; +               snprintf(ref, size, &quot;\&quot;%s\&quot;&quot;, child-&gt;name);
+ &gt; +               new-&gt;string = ref;
+ &gt; }
+ &gt; 
+ &gt; return new;
+I am not sure how it fixed the irq issue as well. I was looking into it.
+
+Adding your code snippet gave the entry as follows in SSDT.
+
+Package (0x02)
+{
+&quot;da7219_aad&quot;,
+DAA*
+}
+...
+Name (DAAD, Package (0x02)
+{
+...
+}
+|Patch Set 9:
+
+&gt; &gt; &gt;
+ &gt; &gt; &gt; Err. this one w/ the correct assignment:
+ &gt; &gt; &gt;
+ &gt; &gt; &gt; diff --git a/src/arch/x86/acpi_device.c b/src/arch/x86/acpi_device.c
+ &gt; &gt; &gt; index ce31dc8..7e20d18 100644
+ &gt; &gt; &gt; --- a/src/arch/x86/acpi_device.c
+ &gt; &gt; &gt; +++ b/src/arch/x86/acpi_device.c
+ &gt; &gt; &gt; @@ -696,8 +696,12 @@ struct acpi_dp *acpi_dp_add_child(struct
+ &gt; &gt; &gt; acpi_dp *dp, const char *name,
+ &gt; &gt; &gt;
+ &gt; &gt; &gt; new = acpi_dp_new(dp, ACPI_DP_TYPE_CHILD, name);
+ &gt; &gt; &gt; if (new) {
+ &gt; &gt; &gt; +               /* Create the reference as a quoted string. */
+ &gt; &gt; &gt; +               size_t size = strlen(child-&gt;name) + 2 + 1;
+ &gt; &gt; &gt; +               char *ref = malloc(size);
+ &gt; &gt; &gt; new-&gt;child = child;
+ &gt; &gt; &gt; -               new-&gt;string = child-&gt;name;
+ &gt; &gt; &gt; +               snprintf(ref, size, &quot;\&quot;%s\&quot;&quot;, child-&gt;name);
+ &gt; &gt; &gt; +               new-&gt;string = ref;
+ &gt; &gt; &gt; }
+ &gt; &gt; &gt;
+ &gt; &gt; &gt; return new;
+ &gt; &gt; I am not sure how it fixed the irq issue as well. I was looking
+ &gt; &gt; into it.
+ &gt; &gt;
+ &gt; &gt; Adding your code snippet gave the entry as follows in SSDT.
+ &gt; &gt;
+ &gt; &gt; Package (0x02)
+ &gt; &gt; {
+ &gt; &gt; &quot;da7219_aad&quot;,
+ &gt; &gt; DAA*
+ &gt; &gt; }
+ &gt; &gt; ...
+ &gt; &gt; Name (DAAD, Package (0x02)
+ &gt; &gt; {
+ &gt; &gt; ...
+ &gt; &gt; }
+ &gt; 
+ &gt; 
+ &gt; Really? That's super odd... do you see something wrong w/ it
+ &gt; logically? Or did we just stumble upon another bug?
+
+ &gt; &gt; &gt;
+ &gt; &gt; &gt; Err. this one w/ the correct assignment:
+ &gt; &gt; &gt;
+ &gt; &gt; &gt; diff --git a/src/arch/x86/acpi_device.c b/src/arch/x86/acpi_device.c
+ &gt; &gt; &gt; index ce31dc8..7e20d18 100644
+ &gt; &gt; &gt; --- a/src/arch/x86/acpi_device.c
+ &gt; &gt; &gt; +++ b/src/arch/x86/acpi_device.c
+ &gt; &gt; &gt; @@ -696,8 +696,12 @@ struct acpi_dp *acpi_dp_add_child(struct
+ &gt; &gt; &gt; acpi_dp *dp, const char *name,
+ &gt; &gt; &gt;
+ &gt; &gt; &gt; new = acpi_dp_new(dp, ACPI_DP_TYPE_CHILD, name);
+ &gt; &gt; &gt; if (new) {
+ &gt; &gt; &gt; +               /* Create the reference as a quoted string. */
+ &gt; &gt; &gt; +               size_t size = strlen(child-&gt;name) + 2 + 1;
+ &gt; &gt; &gt; +               char *ref = malloc(size);
+ &gt; &gt; &gt; new-&gt;child = child;
+ &gt; &gt; &gt; -               new-&gt;string = child-&gt;name;
+ &gt; &gt; &gt; +               snprintf(ref, size, &quot;\&quot;%s\&quot;&quot;, child-&gt;name);
+ &gt; &gt; &gt; +               new-&gt;string = ref;
+ &gt; &gt; &gt; }
+ &gt; &gt; &gt;
+ &gt; &gt; &gt; return new;
+ &gt; &gt; I am not sure how it fixed the irq issue as well. I was looking
+ &gt; &gt; into it.
+ &gt; &gt;
+ &gt; &gt; Adding your code snippet gave the entry as follows in SSDT.
+ &gt; &gt;
+ &gt; &gt; Package (0x02)
+ &gt; &gt; {
+ &gt; &gt; &quot;da7219_aad&quot;,
+ &gt; &gt; DAA*
+ &gt; &gt; }
+ &gt; &gt; ...
+ &gt; &gt; Name (DAAD, Package (0x02)
+ &gt; &gt; {
+ &gt; &gt; ...
+ &gt; &gt; }
+ &gt; 
+ &gt; 
+ &gt; Really? That's super odd... do you see something wrong w/ it
+ &gt; logically? Or did we just stumble upon another bug?
+
+I think the change has to be done in acpi_dp_write_value. I am trying if this works now.
+
+--- a/src/arch/x86/acpi_device.c
++++ b/src/arch/x86/acpi_device.c
+@@ -502,7 +502,12 @@ static void acpi_dp_write_value(const struct acpi_dp *prop)
+                break;
+        case ACPI_DP_TYPE_REFERENCE:
+        case ACPI_DP_TYPE_CHILD:
+-               acpigen_emit_namestring(prop-&gt;string);
++               {
++               size_t size = strlen(prop-&gt;string) + 2 + 1;
++               char *ref = malloc(size);
++               snprintf(ref, size, &quot;\&quot;%s\&quot;&quot;, prop-&gt;string);
++               acpigen_emit_namestring(ref);
++               }
+|Patch Set 9:
+
+&gt; &gt; &gt; &gt;
+ &gt; &gt; &gt; &gt; Err. this one w/ the correct assignment:
+ &gt; &gt; &gt; &gt;
+ &gt; &gt; &gt; &gt; diff --git a/src/arch/x86/acpi_device.c b/src/arch/x86/acpi_device.c
+ &gt; &gt; &gt; &gt; index ce31dc8..7e20d18 100644
+ &gt; &gt; &gt; &gt; --- a/src/arch/x86/acpi_device.c
+ &gt; &gt; &gt; &gt; +++ b/src/arch/x86/acpi_device.c
+ &gt; &gt; &gt; &gt; @@ -696,8 +696,12 @@ struct acpi_dp *acpi_dp_add_child(struct
+ &gt; &gt; &gt; &gt; acpi_dp *dp, const char *name,
+ &gt; &gt; &gt; &gt;
+ &gt; &gt; &gt; &gt; new = acpi_dp_new(dp, ACPI_DP_TYPE_CHILD, name);
+ &gt; &gt; &gt; &gt; if (new) {
+ &gt; &gt; &gt; &gt; +               /* Create the reference as a quoted string.
+ &gt; */
+ &gt; &gt; &gt; &gt; +               size_t size = strlen(child-&gt;name) + 2 + 1;
+ &gt; &gt; &gt; &gt; +               char *ref = malloc(size);
+ &gt; &gt; &gt; &gt; new-&gt;child = child;
+ &gt; &gt; &gt; &gt; -               new-&gt;string = child-&gt;name;
+ &gt; &gt; &gt; &gt; +               snprintf(ref, size, &quot;\&quot;%s\&quot;&quot;, child-&gt;name);
+ &gt; &gt; &gt; &gt; +               new-&gt;string = ref;
+ &gt; &gt; &gt; &gt; }
+ &gt; &gt; &gt; &gt;
+ &gt; &gt; &gt; &gt; return new;
+ &gt; &gt; &gt; I am not sure how it fixed the irq issue as well. I was looking
+ &gt; &gt; &gt; into it.
+ &gt; &gt; &gt;
+ &gt; &gt; &gt; Adding your code snippet gave the entry as follows in SSDT.
+ &gt; &gt; &gt;
+ &gt; &gt; &gt; Package (0x02)
+ &gt; &gt; &gt; {
+ &gt; &gt; &gt; &quot;da7219_aad&quot;,
+ &gt; &gt; &gt; DAA*
+ &gt; &gt; &gt; }
+ &gt; &gt; &gt; ...
+ &gt; &gt; &gt; Name (DAAD, Package (0x02)
+ &gt; &gt; &gt; {
+ &gt; &gt; &gt; ...
+ &gt; &gt; &gt; }
+ &gt; &gt;
+ &gt; &gt;
+ &gt; &gt; Really? That's super odd... do you see something wrong w/ it
+ &gt; &gt; logically? Or did we just stumble upon another bug?
+ &gt; 
+ &gt; &gt; &gt; &gt;
+ &gt; &gt; &gt; &gt; Err. this one w/ the correct assignment:
+ &gt; &gt; &gt; &gt;
+ &gt; &gt; &gt; &gt; diff --git a/src/arch/x86/acpi_device.c b/src/arch/x86/acpi_device.c
+ &gt; &gt; &gt; &gt; index ce31dc8..7e20d18 100644
+ &gt; &gt; &gt; &gt; --- a/src/arch/x86/acpi_device.c
+ &gt; &gt; &gt; &gt; +++ b/src/arch/x86/acpi_device.c
+ &gt; &gt; &gt; &gt; @@ -696,8 +696,12 @@ struct acpi_dp *acpi_dp_add_child(struct
+ &gt; &gt; &gt; &gt; acpi_dp *dp, const char *name,
+ &gt; &gt; &gt; &gt;
+ &gt; &gt; &gt; &gt; new = acpi_dp_new(dp, ACPI_DP_TYPE_CHILD, name);
+ &gt; &gt; &gt; &gt; if (new) {
+ &gt; &gt; &gt; &gt; +               /* Create the reference as a quoted string.
+ &gt; */
+ &gt; &gt; &gt; &gt; +               size_t size = strlen(child-&gt;name) + 2 + 1;
+ &gt; &gt; &gt; &gt; +               char *ref = malloc(size);
+ &gt; &gt; &gt; &gt; new-&gt;child = child;
+ &gt; &gt; &gt; &gt; -               new-&gt;string = child-&gt;name;
+ &gt; &gt; &gt; &gt; +               snprintf(ref, size, &quot;\&quot;%s\&quot;&quot;, child-&gt;name);
+ &gt; &gt; &gt; &gt; +               new-&gt;string = ref;
+ &gt; &gt; &gt; &gt; }
+ &gt; &gt; &gt; &gt;
+ &gt; &gt; &gt; &gt; return new;
+ &gt; &gt; &gt; I am not sure how it fixed the irq issue as well. I was looking
+ &gt; &gt; &gt; into it.
+ &gt; &gt; &gt;
+ &gt; &gt; &gt; Adding your code snippet gave the entry as follows in SSDT.
+ &gt; &gt; &gt;
+ &gt; &gt; &gt; Package (0x02)
+ &gt; &gt; &gt; {
+ &gt; &gt; &gt; &quot;da7219_aad&quot;,
+ &gt; &gt; &gt; DAA*
+ &gt; &gt; &gt; }
+ &gt; &gt; &gt; ...
+ &gt; &gt; &gt; Name (DAAD, Package (0x02)
+ &gt; &gt; &gt; {
+ &gt; &gt; &gt; ...
+ &gt; &gt; &gt; }
+ &gt; &gt;
+ &gt; &gt;
+ &gt; &gt; Really? That's super odd... do you see something wrong w/ it
+ &gt; &gt; logically? Or did we just stumble upon another bug?
+ &gt; 
+ &gt; I think the change has to be done in acpi_dp_write_value. I am
+ &gt; trying if this works now.
+ &gt; 
+ &gt; --- a/src/arch/x86/acpi_device.c
+ &gt; +++ b/src/arch/x86/acpi_device.c
+ &gt; @@ -502,7 +502,12 @@ static void acpi_dp_write_value(const struct
+ &gt; acpi_dp *prop)
+ &gt; break;
+ &gt; case ACPI_DP_TYPE_REFERENCE:
+ &gt; case ACPI_DP_TYPE_CHILD:
+ &gt; -               acpigen_emit_namestring(prop-&gt;string);
+ &gt; +               {
+ &gt; +               size_t size = strlen(prop-&gt;string) + 2 + 1;
+ &gt; +               char *ref = malloc(size);
+ &gt; +               snprintf(ref, size, &quot;\&quot;%s\&quot;&quot;, prop-&gt;string);
+ &gt; +               acpigen_emit_namestring(ref);
+ &gt; +               }
+
+The following fixes the issue. I shall send a changelist for review
+
+--- a/src/arch/x86/acpi_device.c
++++ b/src/arch/x86/acpi_device.c
+@@ -502,7 +502,7 @@ static void acpi_dp_write_value(const struct acpi_dp *prop)
+                break;
+        case ACPI_DP_TYPE_REFERENCE:
+        case ACPI_DP_TYPE_CHILD:
+-               acpigen_emit_namestring(prop-&gt;string);
++               acpigen_write_string(prop-&gt;string);
+                break;
+        case ACPI_DP_TYPE_ARRAY:
+                acpi_dp_write_array(prop-&gt;array);
+|Uploaded patch set 1.
+|Uploaded patch set 1.
+|Patch Set 2: Commit message was updated.
+|Uploaded patch set 1.
+|Uploaded patch set 1.
+|Patch Set 1:
+
+For reef,we added the DA7219 into ASL code https://review.coreboot.org/#/c/15436/
+We changed the devicetree.cb for Maxim.
+|Patch Set 1:
+
+Oh I see that its further changed in devicetree.cb for DA as well. I shall use the same for Amenia and submit a change
+|Patch Set 1:
+
+Hi Aaron, 
+With the https://review.coreboot.org/#/c/15539/9, DA7219 probe fails while requesting IRQ. I have commented on that patch as well. Once that is fixed, I will update this changelist to use the generic driver.
+|Uploaded patch set 2.
+|Uploaded patch set 1.
+|Uploaded patch set 2.
+|After all I kept the inclusion of symbols.h. After a few more tests I notices an intermittent hang after bootblock which was fixed by flushing the CBFS cache also, after all segments are loaded. Initially I thought it might not be necessary.
+|Done :).
+|Done
+|Uploaded patch set 1.
+|Patch Set 2: Patch Set 1 was rebased
+|Patch Set 3:
+
+Paul, do you mean the interface between the payload (Depthcharge in my case) and Coreboot? I'm not sure when was Depthcharge modified to support this but I know it expects a reference to CBMEM table as first argument.
+If you refer to the interface through which you obtain the entry and argument from the prog structure, I haven't used it before (I was using cbmem_find in chromiumos) but it's very nice to have.
+|Uploaded patch set 1.
+|Uploaded patch set 1.
+|Uploaded patch set 1.
+|Patch Set 2: Patch Set 1 was rebased
+|Patch Set 4:
+
+Paul, yes, it was triggering a TLB exception when it was executing run_ramstage back when that was in load_and_run_ramstage and run_ramstage_from_resume was executed for all architectures.
+It was finding gibberish in CBMEM and it was jumping to a bad address. Later on it was ok but I thought it was still good to have an initialized CBMEM area.
+|Uploaded patch set 1.
+|Patch Set 2: Published edit on patch set 1
+|Patch Set 3:
+
+Sorry for the delay in replying.
+Patrick thank you for the changes and for merging this.
+Paul, I was thinking about having a memory map here with interdependent regions, saying that a certain region continues from the previous one for X bytes.
+It would reduce the need to modify both the start address and the size each time you resize a region. But I'll push a patch when I have an actual implementation.
+|Uploaded patch set 1.
+|Uploaded patch set 2.
+|Patch Set 1:
+
+(3 comments)
+
+Thank you for the kind welcome and the review.
+|Uploaded patch set 1.
+|Patch Set 2: Patch Set 1 was rebased
